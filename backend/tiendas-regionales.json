@@ -1,0 +1,396 @@
+[
+  {
+    "nombre": "Fermaqlitoral",
+    "baseUrl": "https://fermaqlitoral.com.ar",
+    "searchUrl": "https://fermaqlitoral.com.ar/productos?q={query}",
+    "plataforma": "tiendanube-sdk",
+    "alcance": "regional",
+    "nota": "Requiere JavaScript para renderizar — scraping HTML no funciona. Pendiente integración headless.",
+    "selectores": {
+      "item": "li.product",
+      "titulo": ".woocommerce-loop-product__title",
+      "precio": ".price .woocommerce-Price-amount",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": false
+  },
+  {
+    "nombre": "Herramientas Online AR",
+    "baseUrl": "https://www.herramientasonline.com.ar",
+    "searchUrl": "https://www.herramientasonline.com.ar/?s={query}",
+    "plataforma": "woocommerce",
+    "alcance": "regional",
+    "selectores": {
+      "item": "li.product",
+      "titulo": ".woocommerce-loop-product__title, h2",
+      "precio": ".price .woocommerce-Price-amount, .price",
+      "link": "a.woocommerce-LoopProduct-link, a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Construccion Total",
+    "baseUrl": "https://www.construcciontotal.com.ar",
+    "searchUrl": "https://www.construcciontotal.com.ar/?s={query}",
+    "plataforma": "woocommerce",
+    "alcance": "regional",
+    "selectores": {
+      "item": "li.product",
+      "titulo": ".woocommerce-loop-product__title, h2",
+      "precio": ".price .woocommerce-Price-amount, .price",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Electro Sur",
+    "baseUrl": "https://www.electrosur.com.ar",
+    "searchUrl": "https://www.electrosur.com.ar/?s={query}",
+    "plataforma": "woocommerce",
+    "alcance": "regional",
+    "selectores": {
+      "item": "li.product",
+      "titulo": ".woocommerce-loop-product__title, h2",
+      "precio": ".price .woocommerce-Price-amount, .price",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "TodoMotoAR",
+    "baseUrl": "https://www.todomoto.com.ar",
+    "searchUrl": "https://www.todomoto.com.ar/?s={query}",
+    "plataforma": "woocommerce",
+    "alcance": "regional",
+    "selectores": {
+      "item": "li.product",
+      "titulo": ".woocommerce-loop-product__title, h2",
+      "precio": ".price .woocommerce-Price-amount, .price",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "PC Factory AR",
+    "baseUrl": "https://www.pcfactory.com.ar",
+    "searchUrl": "https://www.pcfactory.com.ar/buscar?texto={query}",
+    "plataforma": "custom",
+    "alcance": "regional",
+    "selectores": {
+      "item": ".product-box, [class*='product'], article",
+      "titulo": "[class*='name'], [class*='title'], h2, h3",
+      "precio": "[class*='price']:not([class*='old']), [class*='precio']",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Cetrogar",
+    "baseUrl": "https://www.cetrogar.com.ar",
+    "searchUrl": "https://www.cetrogar.com.ar/buscar?q={query}",
+    "plataforma": "custom",
+    "alcance": "regional",
+    "selectores": {
+      "item": "[class*='product'], article, .item",
+      "titulo": "[class*='name'], [class*='title'], h2, h3",
+      "precio": "[class*='price']:not([class*='old'])",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Würth Argentina",
+    "baseUrl": "https://www.wurth.com.ar",
+    "searchUrl": "https://www.wurth.com.ar/tienda/buscar?q={query}",
+    "plataforma": "custom",
+    "alcance": "regional",
+    "selectores": {
+      "item": "[class*='product'], article, .item-product",
+      "titulo": "[class*='name'], [class*='title'], h2, h3",
+      "precio": "[class*='price']:not([class*='old']), [class*='precio']",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Neumáticos Ader",
+    "baseUrl": "https://www.neumaticosader.com.ar",
+    "searchUrl": "https://www.neumaticosader.com.ar/buscar?q={query}",
+    "plataforma": "tiendanube",
+    "alcance": "regional",
+    "categoria": "neumaticos",
+    "ubicacion": "CABA y Gran Buenos Aires",
+    "tiempoEntrega": "24-48hs",
+    "selectores": {
+      "item": ".product-item, .js-product-item",
+      "titulo": ".product-name, .js-product-name",
+      "precio": ".product-price, .js-product-price",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Gomería Pilar",
+    "baseUrl": "https://www.gomeriapilar.com",
+    "searchUrl": "https://www.gomeriapilar.com/?s={query}",
+    "plataforma": "woocommerce",
+    "alcance": "regional",
+    "categoria": "neumaticos",
+    "ubicacion": "Pilar, Buenos Aires",
+    "tiempoEntrega": "24hs (zona norte)",
+    "selectores": {
+      "item": "li.product",
+      "titulo": ".woocommerce-loop-product__title",
+      "precio": ".price .woocommerce-Price-amount",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Casa Segura",
+    "baseUrl": "https://www.casasegura.com.ar",
+    "searchUrl": "https://www.casasegura.com.ar/buscar?q={query}",
+    "plataforma": "tiendanube",
+    "alcance": "regional",
+    "categoria": "seguridad",
+    "ubicacion": "CABA",
+    "tiempoEntrega": "48-72hs",
+    "selectores": {
+      "item": ".product-item",
+      "titulo": ".product-name",
+      "precio": ".product-price",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Ferretería Industrial",
+    "baseUrl": "https://www.ferreteriaindustrial.com.ar",
+    "searchUrl": "https://www.ferreteriaindustrial.com.ar/?s={query}",
+    "plataforma": "woocommerce",
+    "alcance": "regional",
+    "categoria": "herramientas",
+    "ubicacion": "Córdoba Capital",
+    "tiempoEntrega": "72-96hs",
+    "selectores": {
+      "item": "li.product",
+      "titulo": ".woocommerce-loop-product__title",
+      "precio": ".price .woocommerce-Price-amount",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Distribuidora Eléctrica",
+    "baseUrl": "https://www.distribuidoraelectrica.com.ar",
+    "searchUrl": "https://www.distribuidoraelectrica.com.ar/?s={query}",
+    "plataforma": "woocommerce",
+    "alcance": "regional",
+    "categoria": "electricidad",
+    "ubicacion": "Rosario, Santa Fe",
+    "tiempoEntrega": "48-72hs",
+    "selectores": {
+      "item": "li.product",
+      "titulo": ".woocommerce-loop-product__title",
+      "precio": ".price .woocommerce-Price-amount",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Supermercado Día Online",
+    "baseUrl": "https://www.dia.com.ar",
+    "searchUrl": "https://www.dia.com.ar/buscar?q={query}",
+    "plataforma": "custom",
+    "alcance": "regional",
+    "categoria": "alimentos",
+    "ubicacion": "Todo el país",
+    "tiempoEntrega": "24-48hs",
+    "selectores": {
+      "item": ".product-card, [class*='product']",
+      "titulo": ".product-title, [class*='title']",
+      "precio": ".product-price, [class*='price']",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Farmacity",
+    "baseUrl": "https://www.farmacity.com",
+    "searchUrl": "https://www.farmacity.com.ar/buscar?q={query}",
+    "plataforma": "custom",
+    "alcance": "regional",
+    "categoria": "farmacia",
+    "ubicacion": "CABA y Gran Buenos Aires",
+    "tiempoEntrega": "24hs",
+    "selectores": {
+      "item": ".product-item",
+      "titulo": ".product-name",
+      "precio": ".product-price",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Librería Yenny",
+    "baseUrl": "https://www.yenny-elateneo.com",
+    "searchUrl": "https://www.yenny-elateneo.com/buscar?q={query}",
+    "plataforma": "tiendanube",
+    "alcance": "regional",
+    "categoria": "libreria",
+    "ubicacion": "CABA",
+    "tiempoEntrega": "48-72hs",
+    "selectores": {
+      "item": ".product-item",
+      "titulo": ".product-name",
+      "precio": ".product-price",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Megatone",
+    "baseUrl": "https://www.megatone.net",
+    "searchUrl": "https://www.megatone.net/buscar?q={query}",
+    "plataforma": "custom",
+    "alcance": "regional",
+    "categoria": "electronica",
+    "ubicacion": "Córdoba, envíos a todo el país",
+    "tiempoEntrega": "48-72hs",
+    "selectores": {
+      "item": ".product-item, .product-box",
+      "titulo": ".product-name, .product-title",
+      "precio": ".product-price, .price",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Naldo",
+    "baseUrl": "https://www.naldo.com.ar",
+    "searchUrl": "https://www.naldo.com.ar/buscar?q={query}",
+    "plataforma": "custom",
+    "alcance": "regional",
+    "categoria": "hogar",
+    "ubicacion": "Santa Fe, envíos nacionales",
+    "tiempoEntrega": "72-96hs",
+    "selectores": {
+      "item": ".product-item",
+      "titulo": ".product-name",
+      "precio": ".product-price",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  },
+  {
+    "nombre": "Amazon USA",
+    "baseUrl": "https://www.amazon.com",
+    "searchUrl": "https://www.amazon.com/s?k={query}",
+    "plataforma": "amazon",
+    "alcance": "internacional",
+    "categoria": "general",
+    "ubicacion": "USA - Envío internacional",
+    "tiempoEntrega": "15-30 días",
+    "moneda": "USD",
+    "impuestos": {
+      "pais": 0.35,
+      "aduanero": 0.30,
+      "iva": 0.21
+    },
+    "selectores": {
+      "item": "[data-component-type='s-search-result']",
+      "titulo": "h2 a span",
+      "precio": ".a-price-whole, .a-offscreen",
+      "link": "h2 a",
+      "imagen": ".s-image"
+    },
+    "activa": false,
+    "nota": "Requiere proxy/ScraperAPI para evitar bloqueos. Impuestos: 35% PAIS + 30% aduanero + 21% IVA = 86% sobre valor CIF"
+  },
+  {
+    "nombre": "eBay",
+    "baseUrl": "https://www.ebay.com",
+    "searchUrl": "https://www.ebay.com/sch/i.html?_nkw={query}",
+    "plataforma": "ebay",
+    "alcance": "internacional",
+    "categoria": "general",
+    "ubicacion": "Global - Envío internacional",
+    "tiempoEntrega": "20-45 días",
+    "moneda": "USD",
+    "impuestos": {
+      "pais": 0.35,
+      "aduanero": 0.30,
+      "iva": 0.21
+    },
+    "selectores": {
+      "item": ".s-item",
+      "titulo": ".s-item__title",
+      "precio": ".s-item__price",
+      "link": ".s-item__link",
+      "imagen": ".s-item__image-img"
+    },
+    "activa": false,
+    "nota": "Requiere proxy. Impuestos aplicables según régimen 2024"
+  },
+  {
+    "nombre": "AliExpress",
+    "baseUrl": "https://www.aliexpress.com",
+    "searchUrl": "https://www.aliexpress.com/wholesale?SearchText={query}",
+    "plataforma": "aliexpress",
+    "alcance": "internacional",
+    "categoria": "general",
+    "ubicacion": "China - Envío internacional",
+    "tiempoEntrega": "30-60 días",
+    "moneda": "USD",
+    "impuestos": {
+      "pais": 0.35,
+      "aduanero": 0.30,
+      "iva": 0.21
+    },
+    "selectores": {
+      "item": ".product-container",
+      "titulo": ".product-title",
+      "precio": ".product-price",
+      "link": "a",
+      "imagen": ".product-img"
+    },
+    "activa": false,
+    "nota": "Courier privado incluye despacho. Impuestos: 35% PAIS + 30% + 21% IVA"
+  },
+  {
+    "nombre": "SS Store",
+    "baseUrl": "https://ssstore.com.ar",
+    "searchUrl": "https://ssstore.com.ar/productos?q={query}",
+    "plataforma": "tiendanube",
+    "alcance": "regional",
+    "categoria": "tecnologia",
+    "ubicacion": "Argentina",
+    "tiempoEntrega": "48-72hs",
+    "selectores": {
+      "item": ".product-item, .js-product-item, [class*='product']",
+      "titulo": ".product-name, .js-product-name, h1, h2, [class*='title']",
+      "precio": ".product-price, .js-product-price, [class*='price']",
+      "link": "a",
+      "imagen": "img"
+    },
+    "activa": true
+  }
+]

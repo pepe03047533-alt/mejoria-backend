@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #0b1120;
+  color: #ffffff;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #0b1120; }
+::-webkit-scrollbar-thumb { background: #1d4ed8; border-radius: 99px; }
+
+/* Animated gradient background */
+.bg-hero {
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(29,78,216,0.35) 0%, transparent 70%),
+              radial-gradient(ellipse 60% 40% at 80% 80%, rgba(16,185,129,0.12) 0%, transparent 60%),
+              #0b1120;
+}
+
+/* Green glow for trust elements */
+.glow-green {
+  box-shadow: 0 0 30px rgba(16,185,129,0.25), 0 0 60px rgba(16,185,129,0.1);
+}
+
+/* Blue glow */
+.glow-blue {
+  box-shadow: 0 0 40px rgba(29,78,216,0.4), 0 0 80px rgba(29,78,216,0.15);
+}
+
+/* Card hover lift */
+.card-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-lift:hover {
+  transform: translateY(-4px);
+}
