@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "name": "mejoria-frontend",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rootDirectory": "frontend",
+  "env": {
+    "VITE_API_URL": "https://mejoria-backend.onrender.com"
+  }
+}
