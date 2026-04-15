@@ -1,4 +1,5 @@
 require('dotenv').config();
+const mongoose = require('mongoose');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -12,6 +13,11 @@ const { passport, identifyUser } = require('./middleware/userAuth');
 const { dbService } = require('./services/database');
 const { auth } = require('./middleware/auth');
 
+// ========== CONEXIÓN A BASE DE DATOS ==========
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log("🚀 Conectado exitosamente a MongoDB Atlas"))
+  .catch(err => console.error("❌ Error conectando a MongoDB:", err));
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -24,6 +30,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 }));
+
 app.use(express.json());
 app.use(passport.initialize());
 
@@ -90,12 +97,10 @@ app.get('/api/auth/profile', auth.verifyToken, async (req, res) => {
 
 // ========== PANEL DE ADMIN ==========
 
-// Verificar que es admin
 app.get('/api/admin/check', auth.verifyToken, auth.requireAdmin, (req, res) => {
   res.json({ isAdmin: true });
 });
 
-// Estadísticas generales
 app.get('/api/admin/stats', auth.verifyToken, auth.requireAdmin, async (req, res) => {
   try {
     const stats = await dbService.getStats();
@@ -107,7 +112,6 @@ app.get('/api/admin/stats', auth.verifyToken, auth.requireAdmin, async (req, res
   }
 });
 
-// Lista de usuarios
 app.get('/api/admin/users', auth.verifyToken, auth.requireAdmin, async (req, res) => {
   try {
     const users = await dbService.getAllUsers();
@@ -117,7 +121,6 @@ app.get('/api/admin/users', auth.verifyToken, auth.requireAdmin, async (req, res
   }
 });
 
-// Búsquedas recientes
 app.get('/api/admin/searches', auth.verifyToken, auth.requireAdmin, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
@@ -128,7 +131,6 @@ app.get('/api/admin/searches', auth.verifyToken, auth.requireAdmin, async (req, 
   }
 });
 
-// Interacciones recientes
 app.get('/api/admin/interactions', auth.verifyToken, auth.requireAdmin, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
@@ -139,7 +141,6 @@ app.get('/api/admin/interactions', auth.verifyToken, auth.requireAdmin, async (r
   }
 });
 
-// Historial de un usuario específico
 app.get('/api/admin/users/:id/activity', auth.verifyToken, auth.requireAdmin, async (req, res) => {
   try {
     const userId = req.params.id;
@@ -157,15 +158,12 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     service: 'MejorIA Backend', 
-    database: 'SQLite',
-    auth: 'JWT',
-    admin: 'admin@mejoria.com / admin123'
+    database: 'MongoDB Atlas',
+    auth: 'JWT'
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 MejorIA backend en http://localhost:${PORT}`);
-  console.log(`📊 Base de datos: SQLite`);
-  console.log(`🔐 Auth: JWT`);
-  console.log(`👤 Admin: admin@mejoria.com / admin123`);
+  console.log(`🚀 MejorIA backend activo en puerto ${PORT}`);
+  console.log(`📊 Base de datos: MongoDB Atlas`);
 });
