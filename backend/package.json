@@ -19,6 +19,6 @@
     "cookie-parser": "^1.4.7"
   },
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   }
 }
