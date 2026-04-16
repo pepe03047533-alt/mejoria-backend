@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getUser, isGuest, loginWithGoogle, logout } from '../services/userAuth'
+import { getUser, loginWithGoogle, logout } from '../services/userAuth'
 
 export default function UserGreeting() {
   const [user, setUser] = useState(null)
