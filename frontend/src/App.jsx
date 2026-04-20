@@ -17,6 +17,7 @@ function App() {
         <Route path="/ml-best" element={<MLBest />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/profile" element={<UserProfile />} />
+        <Route path="/promociones" element={<Promotions />} />
       </Routes>
     </div>
   )
