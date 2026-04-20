@@ -5,6 +5,7 @@ import AdminPanel from './pages/AdminPanel'
 import MLBest from './pages/MLBest'
 import AuthCallback from './pages/AuthCallback'
 import UserProfile from './pages/UserProfile'
+import Promotions from './pages/Promotions'
 
 function App() {
   return (
