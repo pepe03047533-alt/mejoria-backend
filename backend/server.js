@@ -14,6 +14,10 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Rutas de recomendaciones de compras
+const recommendationRoutes = require('./routes/recommendations');
+app.use('/api', recommendationRoutes);
+
 // RUTA DE SALUD (La que confirmará que todo está OK)
 app.get('/api/health', (req, res) => {
   res.json({ 
