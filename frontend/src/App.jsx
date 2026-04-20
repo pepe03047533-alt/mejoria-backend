@@ -5,6 +5,7 @@ import AdminPanel from './pages/AdminPanel'
 import MLBest from './pages/MLBest'
 import AuthCallback from './pages/AuthCallback'
 import UserProfile from './pages/UserProfile'
+import Promotions from './pages/Promotions'
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/ml-best" element={<MLBest />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/profile" element={<UserProfile />} />
+        <Route path="/promociones" element={<Promotions />} />
       </Routes>
     </div>
   )
