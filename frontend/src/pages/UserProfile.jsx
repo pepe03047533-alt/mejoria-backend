@@ -4,7 +4,7 @@ import axios from 'axios'
 import { getUser, isAuthenticated, setupAxiosInterceptors } from '../services/userAuth'
 import Loader from '../components/Loader'
 
-const API_URL = import.meta.env.VITE_API_URL || ''
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 export default function UserProfile() {
   const [profile, setProfile] = useState(null)

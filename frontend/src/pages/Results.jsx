@@ -7,7 +7,7 @@ import ProductCard from '../components/ProductCard'
 import Loader from '../components/Loader'
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || ''
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 export default function Results() {
   const [searchParams] = useSearchParams()
