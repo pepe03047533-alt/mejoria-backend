@@ -54,7 +54,8 @@ app.get('/api/health', (req, res) => {
     status: 'ok', 
     service: 'MejorIA Backend', 
     database: process.env.MONGODB_URI ? 'MongoDB Atlas' : 'No conectada',
-    message: 'Sistema operando correctamente'
+    message: 'Sistema operando correctamente',
+    timestamp: new Date().toISOString()
   });
 });
 

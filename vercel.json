@@ -5,6 +5,10 @@
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": { "distDir": "dist" }
+    },
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -40,10 +44,5 @@
       "src": "/(.*)",
       "dest": "/frontend/dist/$1"
     }
-  ],
-  "functions": {
-    "api/index.js": {
-      "includeFiles": "api/**"
-    }
-  }
+  ]
 }
