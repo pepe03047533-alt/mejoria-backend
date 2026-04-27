@@ -5,7 +5,7 @@ const cors = require('cors');
 
 const app = express();
 
-// Conexión a MongoDB Atlas (solo en desarrollo, Vercel maneja esto de forma diferente)
+// Conexión a MongoDB Atlas
 if (process.env.MONGODB_URI) {
   mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log("🚀 Conectado a MongoDB Atlas"))
@@ -48,20 +48,20 @@ app.use('/api/ml-best', mlBestRoutes);
 const userHistoryRoutes = require('./routes/userHistory');
 app.use('/api/user-history', userHistoryRoutes);
 
-// RUTA DE SALUD (La que confirmará que todo está OK)
+// RUTA DE SALUD
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     service: 'MejorIA Backend', 
-    database: 'MongoDB Atlas',
+    database: process.env.MONGODB_URI ? 'MongoDB Atlas' : 'No conectada',
     message: 'Sistema operando correctamente'
   });
 });
 
-// Ruta raíz para evitar el error 404
+// Ruta raíz
 app.get('/', (req, res) => {
-  res.send('Servidor de MejorIA activo y conectado a MongoDB Atlas.');
+  res.send('Servidor de MejorIA activo');
 });
 
-// Exportar la aplicación para Vercel Serverless
+// Exportar para Vercel Serverless
 module.exports = app;

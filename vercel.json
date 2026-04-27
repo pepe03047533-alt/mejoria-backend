@@ -5,10 +5,6 @@
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": { "distDir": "dist" }
-    },
-    {
-      "src": "api/index.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -17,8 +13,37 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/promociones",
+      "dest": "/frontend/dist/index.html"
+    },
+    {
+      "src": "/results",
+      "dest": "/frontend/dist/index.html"
+    },
+    {
+      "src": "/admin",
+      "dest": "/frontend/dist/index.html"
+    },
+    {
+      "src": "/ml-best",
+      "dest": "/frontend/dist/index.html"
+    },
+    {
+      "src": "/profile",
+      "dest": "/frontend/dist/index.html"
+    },
+    {
+      "src": "/auth/callback",
+      "dest": "/frontend/dist/index.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/frontend/dist/$1"
     }
-  ]
+  ],
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "api/**"
+    }
+  }
 }
