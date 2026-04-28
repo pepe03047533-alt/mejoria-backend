@@ -2,6 +2,9 @@
   "name": "mejoria-api",
   "version": "1.0.0",
   "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.2.1",
     "axios": "^1.6.0",
