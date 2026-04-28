@@ -1,10 +1,10 @@
 {
   "name": "mejoria-backend",
   "version": "1.0.0",
-  "main": "api/index.js",
+  "main": "backend/server.js",
   "scripts": {
-    "start": "cd api && npm install && node index.js",
-    "dev": "cd api && nodemon index.js"
+    "start": "cd backend && npm install && node server.js",
+    "dev": "cd backend && nodemon server.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.2.1",
