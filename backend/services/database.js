@@ -67,6 +67,33 @@ async function initTables() {
       )
     `);
 
+    // Tabla de stores (tiendas)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS stores (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        categories TEXT[],
+        price_level INTEGER,
+        location_lat NUMERIC,
+        location_lng NUMERIC,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de promotions (promociones)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS promotions (
+        id TEXT PRIMARY KEY,
+        store_id TEXT NOT NULL,
+        discount NUMERIC,
+        payment_method TEXT,
+        days TEXT[],
+        active BOOLEAN DEFAULT TRUE,
+        category TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Tabla de decisiones
     await client.query(`
       CREATE TABLE IF NOT EXISTS user_decisions (
@@ -266,6 +293,78 @@ const dbService = {
       [userId]
     );
     return result.rows[0];
+  },
+
+  // Stores
+  createStore: async (name, categories, priceLevel) => {
+    const id = generateId();
+    const result = await pool.query(
+      'INSERT INTO stores (id, name, categories, price_level) VALUES ($1, $2, $3, $4) RETURNING *',
+      [id, name, categories, priceLevel]
+    );
+    return result.rows[0];
+  },
+
+  getAllStores: async () => {
+    const result = await pool.query('SELECT * FROM stores');
+    return result.rows;
+  },
+
+  // Promotions
+  createPromotion: async (storeId, discount, paymentMethod, days, category) => {
+    const id = generateId();
+    const result = await pool.query(
+      'INSERT INTO promotions (id, store_id, discount, payment_method, days, category, active) VALUES ($1, $2, $3, $4, $5, $6, TRUE) RETURNING *',
+      [id, storeId, discount, paymentMethod, days, category]
+    );
+    return result.rows[0];
+  },
+
+  getAllPromotions: async () => {
+    const result = await pool.query(
+      `SELECT p.*, s.name as store_name 
+       FROM promotions p 
+       JOIN stores s ON p.store_id = s.id`
+    );
+    return result.rows;
+  },
+
+  // Seed data
+  seedStoresAndPromotions: async () => {
+    const storesCount = await pool.query('SELECT COUNT(*) FROM stores');
+    if (parseInt(storesCount.rows[0].count) === 0) {
+      // Insertar tiendas de ejemplo
+      const stores = [
+        { name: 'Chango Más', categories: ['carne', 'limpieza', 'bebidas'], price_level: 2 },
+        { name: 'Carrefour', categories: ['carne', 'limpieza', 'bebidas', 'lacteos'], price_level: 3 },
+        { name: 'Día', categories: ['limpieza', 'bebidas', 'lacteos'], price_level: 1 },
+        { name: 'Coto', categories: ['carne', 'bebidas', 'lacteos'], price_level: 3 },
+        { name: 'Jumbo', categories: ['carne', 'limpieza', 'bebidas', 'lacteos'], price_level: 4 }
+      ];
+
+      for (const store of stores) {
+        const storeResult = await pool.query(
+          'INSERT INTO stores (id, name, categories, price_level) VALUES ($1, $2, $3, $4) RETURNING id',
+          [generateId(), store.name, store.categories, store.price_level]
+        );
+        const storeId = storeResult.rows[0].id;
+
+        // Insertar promociones para cada tienda
+        const promotions = [
+          { discount: 0.20, payment_method: 'tarjeta_visa', days: ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'], category: 'carne' },
+          { discount: 0.15, payment_method: 'mercadopago', days: ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'], category: 'carne' },
+          { discount: 0.10, payment_method: 'efectivo', days: ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'], category: 'carne' }
+        ];
+
+        for (const promo of promotions) {
+          await pool.query(
+            'INSERT INTO promotions (id, store_id, discount, payment_method, days, category, active) VALUES ($1, $2, $3, $4, $5, $6, TRUE)',
+            [generateId(), storeId, promo.discount, promo.payment_method, promo.days, promo.category]
+          );
+        }
+      }
+      console.log('✅ Datos de tiendas y promociones insertados');
+    }
   }
 };
 

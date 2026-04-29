@@ -1,4 +1,4 @@
-const { Store, Promotion, User } = require('../models');
+const { pool } = require('../services/database');
 
 // Obtener día actual en español
 const getCurrentDay = () => {
@@ -29,19 +29,13 @@ const getBestOptions = async (req, res) => {
 
     const currentDay = getCurrentDay();
     
-    // Buscar usuario para obtener sus métodos de pago (opcional)
-    let userPaymentMethods = [];
-    if (user_id) {
-      const user = await User.findById(user_id);
-      if (user) {
-        userPaymentMethods = user.payment_methods;
-      }
-    }
-
     // Buscar tiendas que vendan la categoría
-    const stores = await Store.find({ 
-      categories: { $in: [category.toLowerCase()] } 
-    });
+    const storesResult = await pool.query(
+      'SELECT * FROM stores WHERE $1 = ANY(categories)',
+      [category.toLowerCase()]
+    );
+    
+    const stores = storesResult.rows;
 
     if (stores.length === 0) {
       return res.status(200).json({
@@ -51,40 +45,36 @@ const getBestOptions = async (req, res) => {
       });
     }
 
-    const storeIds = stores.map(store => store._id);
+    const storeIds = stores.map(store => store.id);
 
-    // Construir query de promociones
-    const promotionQuery = {
-      store_id: { $in: storeIds },
-      category: category.toLowerCase(),
-      days: { $in: [currentDay] },
-      active: true
-    };
+    // Buscar promociones activas para hoy
+    const promotionsResult = await pool.query(
+      `SELECT p.*, s.name as store_name, s.price_level 
+       FROM promotions p 
+       JOIN stores s ON p.store_id = s.id 
+       WHERE p.store_id = ANY($1) 
+       AND p.category = $2 
+       AND $3 = ANY(p.days) 
+       AND p.active = true`,
+      [storeIds, category.toLowerCase(), currentDay]
+    );
 
-    // Si tenemos usuario, filtrar por sus métodos de pago
-    if (userPaymentMethods.length > 0) {
-      promotionQuery.payment_method = { $in: userPaymentMethods };
-    }
-
-    // Buscar promociones activas
-    const promotions = await Promotion.find(promotionQuery)
-      .populate('store_id', 'name price_level');
+    const promotions = promotionsResult.rows;
 
     // Calcular scores y ordenar
     const results = promotions.map(promo => {
-      const store = promo.store_id;
-      const score = calculateScore(store.price_level, promo.discount);
+      const score = calculateScore(promo.price_level, promo.discount);
       
       return {
-        store: store.name,
+        store: promo.store_name,
         discount: promo.discount,
         score: parseFloat(score.toFixed(2)),
         payment_method: promo.payment_method,
-        price_level: store.price_level
+        price_level: promo.price_level
       };
     });
 
-    // Ordenar por score (menor = mejor, porque price_level bajo = más barato)
+    // Ordenar por score (menor = mejor)
     results.sort((a, b) => a.score - b.score);
 
     // Devolver top 3
@@ -114,8 +104,8 @@ const getBestOptions = async (req, res) => {
  */
 const getStores = async (req, res) => {
   try {
-    const stores = await Store.find();
-    res.status(200).json({ success: true, data: stores });
+    const result = await pool.query('SELECT * FROM stores');
+    res.status(200).json({ success: true, data: result.rows });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -127,8 +117,12 @@ const getStores = async (req, res) => {
  */
 const getPromotions = async (req, res) => {
   try {
-    const promotions = await Promotion.find().populate('store_id', 'name');
-    res.status(200).json({ success: true, data: promotions });
+    const result = await pool.query(
+      `SELECT p.*, s.name as store_name 
+       FROM promotions p 
+       JOIN stores s ON p.store_id = s.id`
+    );
+    res.status(200).json({ success: true, data: result.rows });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
