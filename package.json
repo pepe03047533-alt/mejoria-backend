@@ -1,10 +1,10 @@
 {
   "name": "mejoria-backend",
   "version": "1.0.0",
-  "main": "backend/server.js",
+  "main": "api/index.js",
   "scripts": {
-    "start": "cd backend && npm install && node server.js",
-    "dev": "cd backend && nodemon server.js"
+    "start": "node api/index.js",
+    "dev": "nodemon api/index.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.2.1",
@@ -22,7 +22,8 @@
     "pg": "^8.20.0",
     "puppeteer": "^24.42.0",
     "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2"
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "sqlite3": "^6.0.1"
   },
   "engines": {
     "node": "18.x"

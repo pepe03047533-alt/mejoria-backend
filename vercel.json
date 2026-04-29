@@ -4,7 +4,7 @@
     {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+      "config": { "distDir": "frontend/dist" }
     },
     {
       "src": "api/index.js",
@@ -15,30 +15,6 @@
     {
       "src": "/api/(.*)",
       "dest": "/api/index.js"
-    },
-    {
-      "src": "/promociones",
-      "dest": "/frontend/dist/index.html"
-    },
-    {
-      "src": "/results",
-      "dest": "/frontend/dist/index.html"
-    },
-    {
-      "src": "/admin",
-      "dest": "/frontend/dist/index.html"
-    },
-    {
-      "src": "/ml-best",
-      "dest": "/frontend/dist/index.html"
-    },
-    {
-      "src": "/profile",
-      "dest": "/frontend/dist/index.html"
-    },
-    {
-      "src": "/auth/callback",
-      "dest": "/frontend/dist/index.html"
     },
     {
       "src": "/(.*)",

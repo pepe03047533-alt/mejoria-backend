@@ -1,28 +1,18 @@
 require('dotenv').config();
+const mongoose = require('mongoose');
 const express = require('express');
 const cors = require('cors');
-const { pool, dbService } = require('./services/database');
+
+// Conexión a MongoDB Atlas
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log("🚀 Conectado a MongoDB Atlas"))
+  .catch(err => console.error("❌ Error de conexión:", err));
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
-
-// Verificar conexión a PostgreSQL y seedear datos
-pool.query('SELECT NOW()', async (err, res) => {
-  if (err) {
-    console.error('❌ Error conectando a PostgreSQL:', err);
-  } else {
-    console.log('🚀 PostgreSQL conectado:', res.rows[0].now);
-    // Seedear datos de tiendas y promociones
-    try {
-      await dbService.seedStoresAndPromotions();
-    } catch (seedErr) {
-      console.error('Error seedeando datos:', seedErr);
-    }
-  }
-});
 
 // Rutas de recomendaciones de compras
 const recommendationRoutes = require('./routes/recommendations');
@@ -56,19 +46,19 @@ app.use('/api/ml-best', mlBestRoutes);
 const userHistoryRoutes = require('./routes/userHistory');
 app.use('/api/user-history', userHistoryRoutes);
 
-// RUTA DE SALUD
+// RUTA DE SALUD (La que confirmará que todo está OK)
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     service: 'MejorIA Backend', 
-    database: 'PostgreSQL',
+    database: 'MongoDB Atlas',
     message: 'Sistema operando correctamente'
   });
 });
 
-// Ruta raíz
+// Ruta raíz para evitar el error 404
 app.get('/', (req, res) => {
-  res.send('Servidor de MejorIA activo y conectado a PostgreSQL.');
+  res.send('Servidor de MejorIA activo y conectado a MongoDB Atlas.');
 });
 
 app.listen(PORT, () => {
