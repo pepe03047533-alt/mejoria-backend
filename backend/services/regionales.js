@@ -1,5 +1,6 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
+const fs = require('fs');
 const path = require('path');
 
 const HEADERS = {
@@ -102,9 +103,21 @@ async function searchRegionales(query) {
   // Leer el JSON en cada llamada para permitir agregar tiendas sin reiniciar
   let tiendas;
   try {
-    const tiendasPath = path.resolve(__dirname, '../../tiendas-regionales.json');
-    delete require.cache[tiendasPath];
-    tiendas = require(tiendasPath);
+    const candidatePaths = [
+      path.resolve(process.cwd(), 'tiendas-regionales.json'),
+      path.resolve(__dirname, '../../tiendas-regionales.json'),
+    ];
+
+    const tiendasPath = candidatePaths.find(function(p) {
+      return fs.existsSync(p);
+    });
+
+    if (!tiendasPath) {
+      throw new Error('Archivo no encontrado en rutas esperadas');
+    }
+
+    const raw = fs.readFileSync(tiendasPath, 'utf8');
+    tiendas = JSON.parse(raw);
   } catch (e) {
     console.error('Error leyendo tiendas-regionales.json:', e.message);
     return [];
