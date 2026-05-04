@@ -102,8 +102,9 @@ async function searchRegionales(query) {
   // Leer el JSON en cada llamada para permitir agregar tiendas sin reiniciar
   let tiendas;
   try {
-    delete require.cache[require.resolve('../tiendas-regionales.json')];
-    tiendas = require('../tiendas-regionales.json');
+    const tiendasPath = path.resolve(__dirname, '../../tiendas-regionales.json');
+    delete require.cache[tiendasPath];
+    tiendas = require(tiendasPath);
   } catch (e) {
     console.error('Error leyendo tiendas-regionales.json:', e.message);
     return [];

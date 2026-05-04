@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
 import Loader from './Loader'
+import { API_BASE_URL } from '../config/api'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const API_URL = API_BASE_URL
 
 /**
  * Componente que muestra SOLO 2 resultados de ML:

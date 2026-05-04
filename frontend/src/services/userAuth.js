@@ -1,6 +1,7 @@
 import axios from 'axios'
+import { API_BASE_URL } from '../config/api'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const API_URL = API_BASE_URL
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
 // Generar o recuperar guestId

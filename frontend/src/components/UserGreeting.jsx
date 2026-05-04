@@ -12,7 +12,8 @@ export default function UserGreeting() {
 
   if (!user) return null
 
-  const isUserGuest = isGuest()
+  // Lógica simplificada para evitar el error de importación
+  const isUserGuest = user.isGuest || !user.email;
 
   // Determinar mensaje de saludo
   const getGreeting = () => {
@@ -82,13 +83,6 @@ export default function UserGreeting() {
                     <p className="text-white/60 text-sm">{user.email}</p>
                   </div>
                 </div>
-                <a
-                  href="/profile"
-                  className="block w-full py-2 text-center text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                  onClick={() => setShowMenu(false)}
-                >
-                  Mi perfil
-                </a>
                 <button
                   onClick={() => {
                     logout()

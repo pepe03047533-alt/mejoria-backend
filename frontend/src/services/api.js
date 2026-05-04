@@ -1,6 +1,7 @@
 import axios from 'axios'
+import { API_BASE_URL } from '../config/api'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const BASE_URL = API_BASE_URL
 
 export async function searchProducts(query, condicion = 'nuevo') {
   const params = new URLSearchParams()
@@ -16,7 +17,7 @@ export async function searchProducts(query, condicion = 'nuevo') {
 }
 
 export async function getAIAnalysis(query, products) {
-  const response = await axios.post(`${BASE_URL}/api/chat`, {
+  const response = await axios.post(`${BASE_URL}/api/ai`, {
     query,
     products,
   }, { timeout: 15000 })
@@ -24,7 +25,7 @@ export async function getAIAnalysis(query, products) {
 }
 
 export async function sendChatMessage(message, history = []) {
-  const response = await axios.post(`${BASE_URL}/api/chat`, {
+  const response = await axios.post(`${BASE_URL}/api/ai`, {
     message,
     history,
   }, { timeout: 15000 })

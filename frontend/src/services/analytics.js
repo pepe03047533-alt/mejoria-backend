@@ -1,4 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../config/api'
+
+const API_URL = API_BASE_URL
 
 /**
  * Envia un evento de tracking al backend

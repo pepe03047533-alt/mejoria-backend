@@ -78,6 +78,7 @@ router.get('/', async (req, res) => {
       query: q,
       total: top10.length,
       category: catKey,
+      results: top10,
       products: top10,
     });
   } catch (error) {

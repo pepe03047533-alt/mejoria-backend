@@ -20,7 +20,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Guest-Id', 'x-guest-id']
 };
 
 // Conexión a MongoDB Atlas
@@ -43,6 +43,7 @@ app.use('/api', recommendationRoutes);
 // Rutas de búsqueda
 const searchRoutes = require('./routes/search');
 app.use('/api/search', searchRoutes);
+app.use('/api/buscar', searchRoutes);
 
 // Rutas de autenticación
 const authRoutes = require('./routes/auth');
@@ -51,6 +52,7 @@ app.use('/api/auth', authRoutes);
 // Rutas de AI
 const aiRoutes = require('./routes/ai');
 app.use('/api/ai', aiRoutes);
+app.use('/api/chat', aiRoutes);
 
 // Rutas de análisis
 const analyzeRoutes = require('./routes/analyze');

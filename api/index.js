@@ -20,9 +20,9 @@ app.use(express.urlencoded({ extended: true }));
 const recommendationRoutes = require('./routes/recommendations');
 app.use('/api', recommendationRoutes);
 
-// Rutas de búsqueda
 const searchRoutes = require('./routes/search');
 app.use('/api/search', searchRoutes);
+app.use('/api/buscar', searchRoutes);
 
 // Rutas de autenticación
 const authRoutes = require('./routes/auth');
@@ -31,6 +31,7 @@ app.use('/api/auth', authRoutes);
 // Rutas de AI
 const aiRoutes = require('./routes/ai');
 app.use('/api/ai', aiRoutes);
+app.use('/api/chat', aiRoutes);
 
 // Rutas de análisis
 const analyzeRoutes = require('./routes/analyze');
@@ -66,3 +67,12 @@ app.get('/', (req, res) => {
 
 // Exportar para Vercel Serverless
 module.exports = app;
+
+// --- CONFIGURACIÓN PARA EJECUCIÓN LOCAL ---
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = 3001; // Puerto 3001 para coincidir con tu frontend
+  app.listen(PORT, () => {
+    console.log(`🚀 Motor encendido en http://localhost:${PORT}`);
+    console.log(`📡 Probá la salud en: http://localhost:${PORT}/api/health`);
+  });
+}
