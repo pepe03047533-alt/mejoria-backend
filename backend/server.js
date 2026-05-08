@@ -5,6 +5,7 @@ const cors = require('cors');
 const axios = require('axios');
 const { getValidAccessToken, getStatus } = require('./services/meliOAuth');
 const logger = require('./utils/logger');
+const { getMongoUri, maskMongoUri } = require('./utils/mongoUri');
 const { version } = require('./package.json');
 
 // Configuración de CORS para producción y desarrollo
@@ -28,11 +29,17 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Guest-Id', 'x-guest-id']
 };
 
-// Conexión a MongoDB Atlas
-if (process.env.MONGODB_URI) {
-  mongoose.connect(process.env.MONGODB_URI)
+// Conexión a MongoDB (MONGODB_URI o MONGO_URL en Railway)
+const mongoUri = getMongoUri();
+if (mongoUri) {
+  console.log(`Intentando conectar a MongoDB con URI: ${maskMongoUri(mongoUri)}`);
+  mongoose
+    .connect(mongoUri)
     .then(() => logger.info('MongoDB connected'))
-    .catch(err => logger.error('MongoDB connection error', { detail: err.message }));
+    .catch((err) => {
+      console.error('Error de conexión a Mongo:', err);
+      logger.error('MongoDB connection error', { detail: err.message });
+    });
 }
 
 const app = express();

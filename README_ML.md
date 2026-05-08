@@ -24,6 +24,6 @@ Si la conexion con Mercado Libre falla (por ejemplo, refresh token invalido), se
      - `MERCADOLIBRE_SECRET_KEY`
      - `MERCADOLIBRE_REDIRECT_URI`
      - `JWT_SECRET`
-     - `MONGODB_URI`
+     - `MONGODB_URI` **o** `MONGO_URL` (Railway Mongo suele inyectar `MONGO_URL`)
    - Validar que la Redirect URI registrada en Mercado Libre coincida exactamente con:
      - `https://www.mejoria.com.ar/auth/callback`

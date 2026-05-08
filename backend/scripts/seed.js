@@ -1,12 +1,17 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const { Store, Promotion, User } = require('../models');
+const { getMongoUri, maskMongoUri } = require('../utils/mongoUri');
 
 const seedData = async () => {
   try {
-    // Conectar a MongoDB
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('✅ Conectado a MongoDB Atlas');
+    const mongoUri = getMongoUri();
+    if (!mongoUri) {
+      throw new Error('Definí MONGODB_URI o MONGO_URL en el entorno');
+    }
+    console.log(`Intentando conectar a MongoDB con URI: ${maskMongoUri(mongoUri)}`);
+    await mongoose.connect(mongoUri);
+    console.log('✅ Conectado a MongoDB');
     
     // Limpiar colecciones
     await Store.deleteMany({});

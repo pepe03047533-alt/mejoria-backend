@@ -1,6 +1,7 @@
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
+const { getMongoUri } = require('../utils/mongoUri');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'tu_secreto_aqui';
 
@@ -38,7 +39,7 @@ function verifyMeliState(state) {
 }
 
 async function loadFromMongo() {
-  if (!process.env.MONGODB_URI) return null;
+  if (!getMongoUri()) return null;
   try {
     const MeliAppToken = require('../models/MeliAppToken');
     const doc = await MeliAppToken.findOne({ key: 'default' }).lean();
@@ -54,7 +55,7 @@ async function loadFromMongo() {
 }
 
 async function saveToMongo(tokens) {
-  if (!process.env.MONGODB_URI) return false;
+  if (!getMongoUri()) return false;
   try {
     const MeliAppToken = require('../models/MeliAppToken');
     await MeliAppToken.findOneAndUpdate(
