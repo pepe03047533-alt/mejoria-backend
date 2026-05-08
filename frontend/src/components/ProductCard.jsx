@@ -9,7 +9,7 @@ function getRankBadge(rank) {
   return `#${rank}`
 }
 
-export default function ProductCard({ product, rank, query, renderTime }) {
+export default function ProductCard({ product, rank, query, renderTime, isBestPrice = false }) {
   useEffect(() => {
     if (query && product) {
       trackImpression(query, product, rank)
@@ -30,9 +30,16 @@ export default function ProductCard({ product, rank, query, renderTime }) {
   const hasDiscount = Number(product.descuento) > 0
 
   return (
-    <article className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4 flex flex-col h-full">
+    <article className={`rounded-2xl border bg-white/5 backdrop-blur p-4 flex flex-col h-full ${
+      isBestPrice ? 'border-green-400/60 shadow-[0_0_0_1px_rgba(74,222,128,0.35)]' : 'border-white/10'
+    }`}>
       <div className="flex items-start justify-between gap-2 mb-3">
         <span className="text-sm font-semibold text-orange-300">{getRankBadge(rank)}</span>
+        {isBestPrice && (
+          <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded-full">
+            Mejor Precio
+          </span>
+        )}
         {hasDiscount && (
           <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded-full">
             {Math.round(product.descuento)}% OFF

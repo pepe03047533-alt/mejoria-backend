@@ -54,20 +54,34 @@ function isDirectUrl(url) {
 
 /**
  * Scoring de relevancia por palabras.
- * - Primera palabra = anchor obligatorio (si no está → score 0)
- * - Tokens numéricos tienen bonus especial
- * - Palabras consecutivas dan bonus
- * - Match ratio penaliza coincidencias parciales
+ * - Anchor: primera palabra de la query debe matchear el título
+ * - Penaliza modelo distinto (ej. A16 pedido vs A06 en título)
+ * - Ordering: relevancia antes que precio (evita groceries baratos arriba)
  */
+function tokenizeQuery(q) {
+  return q.toLowerCase().split(/\s+/).filter(w => w.length >= 2 && !STOPWORDS.has(w));
+}
+
+function tokenMatchesTitle(tituloLower, word) {
+  if (tituloLower.includes(word)) return true;
+  const num = word.match(/^(\d+)(gb|g|tb)?$/i);
+  if (num) {
+    const n = num[1];
+    if (tituloLower.includes(n + 'gb') || tituloLower.includes(n + ' gb')) return true;
+    if (tituloLower.includes(' ' + n + ' ') || tituloLower.includes(' ' + n + 'gb')) return true;
+  }
+  return false;
+}
+
 function scoreProduct(titulo, query) {
   if (!titulo || !query) return 0;
 
   const tituloLower = titulo.toLowerCase();
-  const words = query.toLowerCase().split(/\s+/).filter(w => w.length >= 2 && !STOPWORDS.has(w));
+  const words = tokenizeQuery(query);
   if (words.length === 0) return 0;
 
-  // Anchor: primera palabra DEBE estar en el título
-  if (!tituloLower.includes(words[0])) return 0;
+  // Anchor: primera palabra sustantiva debe aparecer (marca o término clave)
+  if (!tokenMatchesTitle(tituloLower, words[0])) return 0;
 
   let score = 0;
   let matched = 0;
@@ -76,7 +90,7 @@ function scoreProduct(titulo, query) {
     const isNumeric = /^\d+$/.test(word);
     const weight = index === 0 ? words.length * 3 : words.length - index;
 
-    if (tituloLower.includes(word)) {
+    if (tokenMatchesTitle(tituloLower, word)) {
       score += weight;
       if (isNumeric) score += 12; // Bonus numérico
       matched++;
@@ -93,9 +107,33 @@ function scoreProduct(titulo, query) {
     }
   }
 
+  // Penalizar fuerte si la búsqueda pide un modelo (A16, S24, etc.) y el título tiene otro modelo Galaxy
+  const modelToken = words.find(w => /^a\d{1,2}$/i.test(w) || /^s\d{1,2}$/i.test(w) || /^m\d{1,2}$/i.test(w));
+  if (modelToken) {
+    const want = modelToken.toLowerCase();
+    const otherModels = tituloLower.match(/\b(a\d{1,2}|s\d{1,2}|m\d{1,2})\b/gi) || [];
+    const hasWanted = otherModels.some(m => m.toLowerCase() === want);
+    if (otherModels.length > 0 && !hasWanted) {
+      score = Math.max(0, Math.round(score * 0.35));
+    }
+  }
+
   // Match ratio: penalizar coincidencias parciales
   const matchRatio = matched / words.length;
   score = Math.round(score * matchRatio);
+
+  // Compatibilidad de red: si la query pide LTE/4G, penalizar fuerte resultados 5G.
+  const q = query.toLowerCase();
+  const wants4G = /\blte\b|\b4g\b/.test(q);
+  const wants5G = /\b5g\b/.test(q);
+  const has4G = /\blte\b|\b4g\b/.test(tituloLower);
+  const has5G = /\b5g\b/.test(tituloLower);
+  if (wants4G && has5G && !has4G) {
+    score = Math.max(0, Math.round(score * 0.15));
+  }
+  if (wants5G && has4G && !has5G) {
+    score = Math.max(0, Math.round(score * 0.15));
+  }
 
   return Math.max(score, 0);
 }
@@ -129,23 +167,27 @@ function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 
     _score: scoreProduct(p.titulo, query),
   }));
 
-  // 5. Filtrar productos con score 0 (no relevantes)
+  // 5. Solo productos con relevancia > 0 (nunca mezclar basura tipo Carrefour con score 0)
   let relevant = pool.filter(p => p._score > 0);
 
-  // Fallback: si menos de 3 resultados, relajar
-  if (relevant.length < 3) {
-    relevant = pool.filter(p => p._score >= 0);
+  // Celulares: exigir al menos marca o modelo fuerte para no pasar falsos positivos
+  const catKey = detectCategory(query);
+  if (catKey === 'celulares' && relevant.length > 0) {
+    const qLower = query.toLowerCase();
+    const brandHits = [/samsung|galaxy|motorola|iphone|apple|xiaomi|redmi|realme|oppo|honor/i];
+    relevant = relevant.filter(p => {
+      const t = (p.titulo || '').toLowerCase();
+      if (brandHits.some(re => re.test(qLower)) && brandHits.some(re => re.test(t))) return true;
+      if (/\bcelular\b/i.test(t) || /\bsmartphone\b/i.test(t)) return true;
+      return false;
+    });
   }
 
-  // 6. Ordenar por PRECIO ASC primero, luego por SCORE DESC
-  // Esto garantiza que entre productos relevantes, el más barato gana
+  // 6. Ordenar por relevancia primero; entre scores parecidos, precio ascendente
   relevant.sort((a, b) => {
-    // Si la diferencia de score es muy grande (>10), priorizar relevancia
     const scoreDiff = b._score - a._score;
-    if (Math.abs(scoreDiff) > 10) return scoreDiff;
-    // Si scores similares, priorizar precio más bajo
+    if (Math.abs(scoreDiff) >= 3) return scoreDiff;
     if (a.precio !== b.precio) return a.precio - b.precio;
-    // Último recurso: score
     return scoreDiff;
   });
 
@@ -191,7 +233,7 @@ function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 
     }
   }
 
-  // 8. Re-ordenar final por precio ASC (más barato primero)
+  // Orden final estricto por precio ascendente (barato primero).
   deduped.sort((a, b) => a.precio - b.precio);
 
   return deduped.slice(0, maxResults);

@@ -13,15 +13,47 @@ const { dbService } = require('../services/database');
 
 // Timeout wrapper: si una fuente tarda más de `ms`, devuelve []
 function withTimeout(promise, ms, label) {
-  return Promise.race([
-    promise,
-    new Promise((resolve) => {
-      setTimeout(() => {
-        console.log(`  [${label}] Timeout (${ms}ms)`);
-        resolve([]);
-      }, ms);
-    }),
-  ]);
+  let timer = null;
+  const timeoutPromise = new Promise((resolve) => {
+    timer = setTimeout(() => {
+      console.log(`  [${label}] Timeout (${ms}ms)`);
+      resolve([]);
+    }, ms);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
+function getFinalPrice(product) {
+  if (!product) return 0;
+  const precio = Number(product.precio) || 0;
+  const precioOriginal = Number(product.precioOriginal) || 0;
+  const descuento = Number(product.descuento) || 0;
+
+  if (precio > 0) return precio;
+  if (precioOriginal > 0 && descuento > 0) {
+    return Math.round(precioOriginal * (1 - descuento / 100));
+  }
+  return precioOriginal > 0 ? precioOriginal : 0;
+}
+
+function normalizePriceFields(product) {
+  const finalPrice = getFinalPrice(product);
+  if (finalPrice <= 0) return null;
+
+  const precioOriginal = Number(product.precioOriginal) || finalPrice;
+  const descuento = precioOriginal > finalPrice
+    ? Math.round(((precioOriginal - finalPrice) / precioOriginal) * 100)
+    : (Number(product.descuento) || 0);
+
+  return {
+    ...product,
+    precio: finalPrice,
+    precioOriginal,
+    descuento,
+  };
 }
 
 router.get('/', async (req, res) => {
@@ -31,24 +63,31 @@ router.get('/', async (req, res) => {
   }
 
   try {
-    const start = Date.now();
-    const catKey = detectCategory(q);
-    const categoryId = catKey ? ML_CATEGORIES[catKey] : null;
-    const cond = condicion || 'nuevo';
+    let normalizedQuery = q.trim();
+    try {
+      normalizedQuery = decodeURIComponent(normalizedQuery);
+    } catch (_) {
+      // Si la query no está codificada, usarla tal cual.
+    }
 
-    console.log(`\n🔍 Búsqueda: "${q}" | Condición: ${cond}`);
+    const start = Date.now();
+    const catKey = detectCategory(normalizedQuery);
+    const categoryId = catKey ? ML_CATEGORIES[catKey] : null;
+    const cond = condicion === 'usado' ? 'usado' : 'nuevo';
+
+    console.log(`\n🔍 Búsqueda: "${normalizedQuery}" | Condición: ${cond}`);
 
     const results = await Promise.allSettled([
-      withTimeout(searchMercadoLibre(q, categoryId, cond), 10000, 'MercadoLibre'),
-      withTimeout(searchCarrefour(q), 8000, 'Carrefour'),
-      withTimeout(searchMusimundo(q), 8000, 'Musimundo'),
-      withTimeout(searchBing(q), 8000, 'Bing'),
-      withTimeout(searchJumbo(q), 8000, 'Jumbo'),
-      withTimeout(searchDisco(q), 8000, 'Disco'),
-      withTimeout(searchVea(q), 8000, 'Vea'),
-      withTimeout(searchEasy(q), 8000, 'Easy'),
-      withTimeout(searchSodimac(q), 8000, 'Sodimac'),
-      withTimeout(searchRegionales(q), 8000, 'Regionales'),
+      withTimeout(searchMercadoLibre(normalizedQuery, categoryId, cond), 35000, 'MercadoLibre'),
+      withTimeout(searchCarrefour(normalizedQuery), 8000, 'Carrefour'),
+      withTimeout(searchMusimundo(normalizedQuery), 8000, 'Musimundo'),
+      withTimeout(searchBing(normalizedQuery), 8000, 'Bing'),
+      withTimeout(searchJumbo(normalizedQuery), 8000, 'Jumbo'),
+      withTimeout(searchDisco(normalizedQuery), 8000, 'Disco'),
+      withTimeout(searchVea(normalizedQuery), 8000, 'Vea'),
+      withTimeout(searchEasy(normalizedQuery), 8000, 'Easy'),
+      withTimeout(searchSodimac(normalizedQuery), 8000, 'Sodimac'),
+      withTimeout(searchRegionales(normalizedQuery), 8000, 'Regionales'),
     ]);
 
     const getResults = (r) => r.status === 'fulfilled' ? r.value : [];
@@ -57,25 +96,32 @@ router.get('/', async (req, res) => {
     const elapsed = Date.now() - start;
     console.log(`  → ${allProducts.length} productos en ${elapsed}ms`);
 
-    const top10 = normalizeAndRank(allProducts, 10, q, cond);
+    const normalizedProducts = allProducts
+      .map(normalizePriceFields)
+      .filter(Boolean);
+
+    const ranked = normalizeAndRank(normalizedProducts, 50, normalizedQuery, cond)
+      .sort((a, b) => (Number(a.precio) || 0) - (Number(b.precio) || 0));
+
+    const top10 = ranked.slice(0, 10);
 
     // Registrar búsqueda en el historial del usuario (si existe)
     if (req.user) {
       try {
-        await dbService.logSearchHistory(req.user.id, q, { condicion: cond }, top10.length);
+        await dbService.logSearchHistory(req.user.id, normalizedQuery, { condicion: cond }, top10.length);
       } catch (err) {
         console.log('Error registrando búsqueda:', err.message);
       }
     }
 
-    if (top10.length === 0) {
+    if (top10.length < 3) {
       return res.status(404).json({
-        error: 'No encontramos resultados. Probá con otro término.',
+        error: 'No encontramos al menos 3 productos nuevos con precio válido para comparar.',
       });
     }
 
     res.json({
-      query: q,
+      query: normalizedQuery,
       total: top10.length,
       category: catKey,
       results: top10,

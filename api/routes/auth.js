@@ -3,8 +3,9 @@ const router = express.Router();
 const { googleService } = require('../services/googleService');
 const { dbService } = require('../services/database');
 const jwt = require('jsonwebtoken');
+const meliOAuth = require('../services/meliOAuth');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mejoria-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'tu_secreto_aqui';
 
 // Generar token JWT
 const generateToken = (user) => {
@@ -73,6 +74,44 @@ router.post('/google/token', async (req, res) => {
   } catch (err) {
     console.error('Error en Google auth:', err);
     res.status(500).json({ error: 'Error en autenticación' });
+  }
+});
+
+// Mercado Libre OAuth — redirige a la página de autorización de ML
+router.get('/meli/start', (req, res) => {
+  try {
+    const url = meliOAuth.buildAuthorizeRedirectUrl();
+    if (!url) {
+      return res.status(500).json({ error: 'Configurá MERCADOLIBRE_APP_ID' });
+    }
+    res.redirect(url);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'No se pudo iniciar OAuth de Mercado Libre' });
+  }
+});
+
+router.post('/meli/exchange', async (req, res) => {
+  try {
+    const { code, state } = req.body;
+    if (!code || !meliOAuth.verifyMeliState(state)) {
+      return res.status(400).json({ error: 'Código o estado inválido' });
+    }
+    const redirectUri = meliOAuth.getRedirectUri();
+    await meliOAuth.exchangeCode(code, redirectUri);
+    res.json({ ok: true, message: 'Mercado Libre conectado' });
+  } catch (err) {
+    console.error('Meli exchange:', err);
+    res.status(500).json({ error: err.message || 'Error al obtener token' });
+  }
+});
+
+router.get('/meli/status', async (req, res) => {
+  try {
+    const status = await meliOAuth.getStatus();
+    res.json(status);
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo leer el estado' });
   }
 });
 

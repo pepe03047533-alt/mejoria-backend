@@ -9,7 +9,7 @@ const googleService = {
   // Configuración de OAuth
   oauthConfig: {
     clientId: GOOGLE_API_KEY,
-    redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5173/auth/callback',
+    redirectUri: process.env.GOOGLE_REDIRECT_URI || 'https://www.mejoria.com.ar/auth/callback',
     scope: 'profile email',
   },
 

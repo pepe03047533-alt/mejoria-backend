@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { getUser, loginWithGoogle, logout } from '../services/userAuth'
 
 export default function UserGreeting() {
@@ -83,6 +84,13 @@ export default function UserGreeting() {
                     <p className="text-white/60 text-sm">{user.email}</p>
                   </div>
                 </div>
+                <Link
+                  to="/profile"
+                  onClick={() => setShowMenu(false)}
+                  className="block w-full py-2 text-center text-white hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  Perfil
+                </Link>
                 <button
                   onClick={() => {
                     logout()

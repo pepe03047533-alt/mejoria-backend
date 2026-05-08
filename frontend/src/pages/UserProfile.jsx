@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
-import { getUser, isAuthenticated, setupAxiosInterceptors } from '../services/userAuth'
+import { getUser, isAuthenticated, setupAxiosInterceptors, startMercadoLibreOAuth } from '../services/userAuth'
 import Loader from '../components/Loader'
 import { API_BASE_URL } from '../config/api'
 
@@ -10,6 +10,7 @@ const API_URL = API_BASE_URL
 export default function UserProfile() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [meliStatus, setMeliStatus] = useState(null)
 
   useEffect(() => {
     setupAxiosInterceptors()
@@ -25,6 +26,12 @@ export default function UserProfile() {
         setProfile(res.data)
       } catch (err) {
         console.error('Error:', err)
+      }
+      try {
+        const meli = await axios.get(`${API_URL}/api/auth/meli/status`)
+        setMeliStatus(meli.data)
+      } catch (_) {
+        setMeliStatus(null)
       }
       setLoading(false)
     }
@@ -84,6 +91,31 @@ export default function UserProfile() {
                 <p className="text-3xl font-bold text-white">{profile.stats.total_decisions}</p>
                 <p className="text-white/60 text-sm">Decisiones</p>
               </div>
+            </div>
+
+            {/* Mercado Libre API (OAuth para límites más altos en búsqueda) */}
+            <div className="bg-white/10 rounded-xl p-6 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="text-white font-bold mb-1">Mercado Libre API</h3>
+                <p className="text-white/60 text-sm">
+                  {meliStatus?.connected
+                    ? `Conectado${meliStatus.expiresAt ? ` · expira ~${new Date(meliStatus.expiresAt).toLocaleString('es-AR')}` : ''}`
+                    : 'Sin token de aplicación: las búsquedas usan la API pública.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    startMercadoLibreOAuth()
+                  } catch (e) {
+                    alert(e.message || 'No se pudo abrir Mercado Libre')
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium whitespace-nowrap"
+              >
+                {meliStatus?.connected ? 'Renovar conexión' : 'Conectar Mercado Libre'}
+              </button>
             </div>
 
             {/* Búsquedas recientes */}

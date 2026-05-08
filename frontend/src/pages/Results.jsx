@@ -64,17 +64,24 @@ export default function Results() {
                 )}
                 
                 {!loading && !error && products.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {products.map((item, index) => (
-                            <ProductCard 
-                                key={`${item.id || index}`}
-                                product={item}
-                                rank={index + 1}
-                                query={query}
-                                renderTime={renderTime}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <div className="mb-5 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
+                            Mostrando {products.length} opciones nuevas ordenadas por precio (menor a mayor). 
+                            La primera tarjeta está marcada como <span className="font-semibold">Mejor Precio</span>.
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {products.map((item, index) => (
+                                <ProductCard 
+                                    key={`${item.id || index}`}
+                                    product={item}
+                                    rank={index + 1}
+                                    query={query}
+                                    renderTime={renderTime}
+                                    isBestPrice={index === 0}
+                                />
+                            ))}
+                        </div>
+                    </>
                 )}
 
                 {!loading && !error && products.length === 0 && query && (

@@ -71,6 +71,18 @@ export async function handleGoogleCallback(accessToken) {
   }
 }
 
+export async function handleMeliCallback(code, state) {
+  await axios.post(`${API_URL}/api/auth/meli/exchange`, { code, state })
+}
+
+/** Abre la autorización de Mercado Libre (redirige al dominio del backend). */
+export function startMercadoLibreOAuth() {
+  if (!API_URL) {
+    throw new Error('Configurá VITE_API_URL para conectar Mercado Libre')
+  }
+  window.location.href = `${API_URL}/api/auth/meli/start`
+}
+
 // Login como invitado
 export async function loginAsGuest() {
   const guestId = getOrCreateGuestId()

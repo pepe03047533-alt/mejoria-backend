@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { dbService } = require('../services/database');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mejoria-secret-key-2024';
+const JWT_SECRET = process.env.JWT_SECRET || 'tu_secreto_aqui';
 const JWT_EXPIRES = '7d';
 
 const auth = {

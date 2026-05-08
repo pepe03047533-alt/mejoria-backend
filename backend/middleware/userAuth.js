@@ -3,7 +3,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const jwt = require('jsonwebtoken');
 const { dbService } = require('../services/database');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mejoria-user-secret-2024';
+const JWT_SECRET = process.env.JWT_SECRET || 'tu_secreto_aqui';
 const JWT_EXPIRES = '30d';
 
 // Configurar Passport con Google OAuth

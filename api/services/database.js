@@ -104,6 +104,16 @@ function initTables() {
       )
     `);
 
+    db.run(`
+      CREATE TABLE IF NOT EXISTS meli_oauth (
+        id TEXT PRIMARY KEY,
+        access_token TEXT,
+        refresh_token TEXT,
+        expires_at INTEGER,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Índices para optimización
     db.run(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)`);
@@ -560,6 +570,38 @@ const dbService = {
         (err, row) => {
           if (err) reject(err);
           else resolve(row);
+        }
+      );
+    });
+  },
+
+  getMeliTokens: () => {
+    return new Promise((resolve, reject) => {
+      db.get(
+        'SELECT access_token, refresh_token, expires_at FROM meli_oauth WHERE id = ?',
+        ['app'],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row || null);
+        }
+      );
+    });
+  },
+
+  saveMeliTokens: ({ access_token, refresh_token, expires_at }) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        `INSERT INTO meli_oauth (id, access_token, refresh_token, expires_at, updated_at)
+         VALUES ('app', ?, ?, ?, datetime('now'))
+         ON CONFLICT(id) DO UPDATE SET
+           access_token = excluded.access_token,
+           refresh_token = excluded.refresh_token,
+           expires_at = excluded.expires_at,
+           updated_at = datetime('now')`,
+        [access_token, refresh_token || '', expires_at],
+        function runCb(err) {
+          if (err) reject(err);
+          else resolve(true);
         }
       );
     });
