@@ -37,6 +37,11 @@ export function getUser() {
 
 // Login con Google usando OAuth 2.0
 export function loginWithGoogle() {
+  if (!GOOGLE_CLIENT_ID?.trim()) {
+    throw new Error(
+      'Falta VITE_GOOGLE_CLIENT_ID. Configurala en Vercel (Environment Variables) y redeployá.'
+    )
+  }
   const redirectUri = window.location.origin + '/auth/callback'
   const scope = 'profile email'
   

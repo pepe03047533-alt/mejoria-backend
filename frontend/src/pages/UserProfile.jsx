@@ -16,7 +16,7 @@ export default function UserProfile() {
     setupAxiosInterceptors()
     
     if (!isAuthenticated()) {
-      window.location.href = '/'
+      window.location.href = '/login'
       return
     }
 

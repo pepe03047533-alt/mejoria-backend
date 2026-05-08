@@ -59,10 +59,21 @@ export default function UserGreeting() {
                 <p className="text-white/60 text-sm mb-3">
                   Estás navegando como invitado. Iniciá sesión para guardar tu historial.
                 </p>
+                <Link
+                  to="/login"
+                  onClick={() => setShowMenu(false)}
+                  className="block w-full py-2 mb-2 text-center text-orange-300 hover:text-orange-200 text-sm font-medium border border-orange-400/40 rounded-lg"
+                >
+                  Ir a página de login
+                </Link>
                 <button
                   onClick={() => {
-                    loginWithGoogle()
-                    setShowMenu(false)
+                    try {
+                      loginWithGoogle()
+                      setShowMenu(false)
+                    } catch (err) {
+                      alert(err?.message || 'No se pudo iniciar con Google')
+                    }
                   }}
                   className="w-full py-2 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
                 >
