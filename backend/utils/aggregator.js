@@ -30,6 +30,19 @@ const STOPWORDS = new Set([
   'que','mas','más','muy','como','donde','cuando','mejor','bueno','buena',
 ]);
 
+// Marcas conocidas para el filtro obligatorio de marca
+const KNOWN_BRANDS = new Set([
+  'gadnic','samsung','lg','sony','philips','motorola','xiaomi','apple','iphone',
+  'nokia','huawei','honor','oppo','realme','redmi','tcl','hisense','noblex',
+  'bgh','sanyo','hitachi','panasonic','electrolux','whirlpool','drean','gafa',
+  'patrick','longvie','aurora','stihl','karcher','bosch','makita','dewalt',
+  'stanley','einhell','gamma','lusqtoff','rexon','lenovo','hp','dell','asus',
+  'acer','msi','logitech','hyperx','razer','corsair','jbl','marshall','bose',
+  'oster','atma','peabody','liliana','philco','kent','midea','carrier',
+  'surrey','tophouse','daewoo','ranser','protalia','black+decker','candy',
+  'kölher','sensei','punktal','kanji','noga','bangho','exo','positivo',
+]);
+
 // Patrones de exclusión - productos que NO son el producto buscado
 const EXCLUSION_PATTERNS = [
   /\b(repuesto|repuestos|pieza|piezas|modulo|módulo)\b/i,
@@ -210,6 +223,30 @@ function tokenMatchesTitle(tituloLower, word) {
   return false;
 }
 
+/**
+ * Detecta marcas conocidas presentes en la query del usuario.
+ * @returns {string[]} tokens de marca encontrados (ya en lowercase)
+ */
+function detectQueryBrands(query) {
+  return tokenizeQuery(query).filter(t => KNOWN_BRANDS.has(t));
+}
+
+/**
+ * Match ratio puro: fracción de tokens de la query presentes en el título (0..1).
+ * Se usa para dar prioridad absoluta a productos con 100% de coincidencia.
+ */
+function computeMatchRatio(titulo, query) {
+  if (!titulo || !query) return 0;
+  const tituloLower = titulo.toLowerCase();
+  const words = tokenizeQuery(query);
+  if (words.length === 0) return 0;
+  let matched = 0;
+  for (const word of words) {
+    if (tokenMatchesTitle(tituloLower, word)) matched++;
+  }
+  return matched / words.length;
+}
+
 function scoreProduct(titulo, query) {
   if (!titulo || !query) return 0;
 
@@ -301,6 +338,38 @@ function sortByPriceMercadoLibreTiebreak(a, b) {
   return storeRank(a) - storeRank(b);
 }
 
+/** Una fila por publicación ML; no fundir títulos casi iguales de vendedores distintos. */
+function getListingDedupeKey(p) {
+  const url = ((p.url || '') + '').split('#')[0].split('?')[0].trim();
+  if (/mercadolibre\.com\./i.test(url)) {
+    const up = url.match(/\/(MLAU\d+)\b/i);
+    if (up) return `meli:${up[1]}`;
+    const pc = url.match(/\/p\/(MLA\d+)\b/i);
+    if (pc) return `meli:${pc[1]}`;
+    const art = url.match(/\b(MLA-\d+-\d{4,})\b/i);
+    if (art) return `meli:${art[1]}`;
+  }
+  if (url) return `url:${url}`;
+  return `t:${(p.titulo || '').toLowerCase().replace(/\s+/g, ' ').trim().slice(0, 120)}`;
+}
+
+/** Ajusta precio mostrado si el listado está por encima de oferta o de referencia. */
+function ensurePayablePrecio(p) {
+  let pay = Number(p.precio) || 0;
+  const sale = Number(p.precioOferta ?? NaN);
+  const orig = Number(p.precioOriginal) || 0;
+  if (Number.isFinite(sale) && sale > 0 && pay > sale) pay = sale;
+  else if (orig > 0 && pay > orig) pay = orig;
+  if (!(pay > 0)) pay = Number(p.precio) || orig;
+  const out = { ...p, precio: Math.round(pay) };
+  delete out.precioOferta;
+  const po = Number(out.precioOriginal) || 0;
+  if (po > out.precio && po > 0) {
+    out.descuento = Math.round(((po - out.precio) / po) * 100);
+  }
+  return out;
+}
+
 function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 'nuevo', options = {}) {
   const { strictLowestPrice = false } = options;
   if (!allProducts || allProducts.length === 0) return [];
@@ -333,14 +402,26 @@ function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 
   const wantedInches = extractWantedTvInches(query);
   pool = pool.filter(p => productMatchesWantedInches(p, wantedInches));
 
-  // 4. Calcular score de relevancia
+  // 4. Calcular score de relevancia + match ratio por token
   pool = pool.map(p => ({
     ...p,
     _score: scoreProduct(p.titulo, query),
+    _matchRatio: computeMatchRatio(p.titulo, query),
   }));
 
   // 5. Solo productos con relevancia > 0 (nunca mezclar basura tipo Carrefour con score 0)
   let relevant = pool.filter(p => p._score > 0);
+
+  // 5b. Filtro de marca obligatorio: si la query contiene una marca conocida,
+  // descartar productos cuyo título no la contenga
+  const queryBrands = detectQueryBrands(query);
+  if (queryBrands.length > 0) {
+    const brandFiltered = relevant.filter(p => {
+      const tLower = (p.titulo || '').toLowerCase();
+      return queryBrands.every(brand => tLower.includes(brand));
+    });
+    if (brandFiltered.length > 0) relevant = brandFiltered;
+  }
 
   // Celulares: exigir al menos marca o modelo fuerte para no pasar falsos positivos
   const catKey = detectCategory(query);
@@ -355,11 +436,19 @@ function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 
     });
   }
 
-  // 6. Orden previo a deduplicar: relevancia o precio según modo
+  // 6. Orden previo a deduplicar: 100% match arriba, luego relevancia y precio
   if (strictLowestPrice) {
-    relevant.sort(sortByPriceMercadoLibreTiebreak);
+    relevant.sort((a, b) => {
+      const aFull = a._matchRatio >= 1 ? 1 : 0;
+      const bFull = b._matchRatio >= 1 ? 1 : 0;
+      if (aFull !== bFull) return bFull - aFull;
+      return sortByPriceMercadoLibreTiebreak(a, b);
+    });
   } else {
     relevant.sort((a, b) => {
+      const aFull = a._matchRatio >= 1 ? 1 : 0;
+      const bFull = b._matchRatio >= 1 ? 1 : 0;
+      if (aFull !== bFull) return bFull - aFull;
       const scoreDiff = b._score - a._score;
       if (Math.abs(scoreDiff) >= 3) return scoreDiff;
       if (a.precio !== b.precio) return a.precio - b.precio;
@@ -367,55 +456,35 @@ function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 
     });
   }
 
-  // 7. Deduplicar: mantener solo el MÁS BARATO de cada producto similar
-  const deduped = [];
-  const seenTitles = new Map();
-
+  // 7. Deduplicar por publicación (ML: MLAU… /p/MLA…); nunca por similitud de título (varias ofertas del mismo equipo).
+  const byDedupeKey = new Map();
   for (const p of relevant) {
-    // Normalizar título para comparar similitud
-    const tituloNorm = (p.titulo || '').toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    // Verificar si ya existe un producto muy similar
-    let isDuplicate = false;
-    for (const [existingTitle, idx] of seenTitles) {
-      const words1 = new Set(tituloNorm.split(' '));
-      const words2 = new Set(existingTitle.split(' '));
-      const intersection = [...words1].filter(w => words2.has(w));
-      const similarity = intersection.length / Math.max(words1.size, words2.size);
-      
-      if (similarity > 0.75) {
-        if (p.precio < deduped[idx].precio) {
-          deduped[idx] = p;
-        }
-        isDuplicate = true;
-        break;
-      }
-    }
-    
-    if (!isDuplicate) {
-      seenTitles.set(tituloNorm, deduped.length);
-      deduped.push(p);
+    const k = getListingDedupeKey(p);
+    const prev = byDedupeKey.get(k);
+    const price = Number(p.precio) || 0;
+    const prevPrice = Number(prev?.precio) || 0;
+    if (!prev || price < prevPrice) {
+      byDedupeKey.set(k, p);
     }
   }
+  const deduped = [...byDedupeKey.values()].map(ensurePayablePrecio);
 
-  // Orden final: modo búsqueda global = siempre el precio más bajo (empate: Mercado Libre primero)
-  if (strictLowestPrice) {
-    deduped.sort(sortByPriceMercadoLibreTiebreak);
-  } else {
-    deduped.sort((a, b) => {
-      const scoreDiff = b._score - a._score;
-      if (Math.abs(scoreDiff) >= 3) return scoreDiff;
-      const pa = Number(a.precio) || 0;
-      const pb = Number(b.precio) || 0;
-      if (pa !== pb) return pa - pb;
-      return scoreDiff;
-    });
-  }
+  // Orden final: 100% match primero (por precio dentro), luego parciales por precio
+  deduped.sort((a, b) => {
+    const aFull = (a._matchRatio >= 1) ? 1 : 0;
+    const bFull = (b._matchRatio >= 1) ? 1 : 0;
+    if (aFull !== bFull) return bFull - aFull;
+    return (Number(a.precio) || 0) - (Number(b.precio) || 0);
+  });
 
   return deduped.slice(0, maxResults);
 }
 
-module.exports = { normalizeAndRank, detectCategory, ML_CATEGORIES, extractSpecs };
+module.exports = {
+  normalizeAndRank,
+  detectCategory,
+  ML_CATEGORIES,
+  extractSpecs,
+  isHidrolavadoraQuery,
+  passesHidrolavadoraPrincipalNoun,
+};

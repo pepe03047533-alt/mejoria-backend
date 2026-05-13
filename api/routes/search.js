@@ -110,7 +110,7 @@ router.get('/', async (req, res) => {
       .filter(Boolean);
 
     const ranked = normalizeAndRank(normalizedProducts, MAX_SEARCH_RESULTS, normalizedQuery, cond, {
-      strictLowestPrice: false,
+      strictLowestPrice: true,
     });
 
     const top = ranked;

@@ -2,6 +2,7 @@ const axios = require('axios');
 const { getValidAccessToken, forceRefreshAccessToken } = require('./meliOAuth');
 const logger = require('../utils/logger');
 const { extractWantedTvInches, productMatchesWantedInches } = require('../utils/tvScreenMatch');
+const { isHidrolavadoraQuery, passesHidrolavadoraPrincipalNoun } = require('../utils/aggregator');
 
 const MIN_VALID_PRODUCTS = 50;
 const PAGE_SIZE = 100;
@@ -12,13 +13,18 @@ const MAX_SEARCH_OFFSET_TV_INCHES = 8000;
 function mapMeliItem(item) {
   if (!item || !item.permalink) return null;
 
-  let price = Number(item.price);
-  if (!price || price <= 0) {
-    const sp = item.sale_price;
-    if (sp != null) {
-      price = typeof sp === 'object' ? Number(sp.amount ?? sp.value ?? 0) : Number(sp);
-    }
+  const standard = Number(item.price) || 0;
+  let saleAmt = 0;
+  if (item.sale_price != null) {
+    saleAmt = typeof item.sale_price === 'object'
+      ? Number(item.sale_price.amount ?? item.sale_price.value ?? 0)
+      : Number(item.sale_price);
   }
+
+  let price = standard;
+  if (saleAmt > 0 && standard > saleAmt) price = saleAmt;
+  else if (standard <= 0 && saleAmt > 0) price = saleAmt;
+
   if (!price || price <= 0) {
     const prs = item.prices;
     if (Array.isArray(prs) && prs[0]) {
@@ -33,15 +39,16 @@ function mapMeliItem(item) {
   if (price <= 0) return null;
 
   const original = Number(item.original_price) || 0;
+  const listForDisplay = Math.max(standard, original, price);
 
-  const descuento = original > price && original > 0
-    ? Math.round(((original - price) / original) * 100)
+  const descuento = listForDisplay > price && listForDisplay > 0
+    ? Math.round(((listForDisplay - price) / listForDisplay) * 100)
     : 0;
 
-  return {
+  const out = {
     titulo: item.title || 'Producto MercadoLibre',
     precio: price,
-    precioOriginal: original > 0 ? original : price,
+    precioOriginal: listForDisplay > 0 ? listForDisplay : price,
     descuento,
     url: item.permalink,
     imagen: item.thumbnail || '',
@@ -50,6 +57,8 @@ function mapMeliItem(item) {
     disponible: item.available_quantity !== 0,
     fuente: 'meli_api',
   };
+  if (saleAmt > 0 && standard > saleAmt) out.precioOferta = saleAmt;
+  return out;
 }
 
 async function searchMercadoLibreApi(query, categoryId = null, condicion = 'nuevo') {
@@ -70,8 +79,8 @@ async function searchMercadoLibreApi(query, categoryId = null, condicion = 'nuev
     const wantedInches = extractWantedTvInches(query);
     const maxOffset = wantedInches != null ? MAX_SEARCH_OFFSET_TV_INCHES : MAX_SEARCH_OFFSET;
 
-    /** Con TV por pulgadas hace falta recorrer páginas ordenadas por precio (suelen aparecer primero las más chicas). */
-    const sortMode = wantedInches != null ? 'price_asc' : 'relevance';
+    /** Premisa: ML siempre por menor precio (como "Menor precio" en la web). */
+    const sortMode = 'price_asc';
 
     while (collected.length < MIN_VALID_PRODUCTS && offset < maxOffset) {
       const params = {
@@ -98,6 +107,7 @@ async function searchMercadoLibreApi(query, categoryId = null, condicion = 'nuev
       if (!mapped.length) break;
       for (const item of mapped) {
         if (!productMatchesWantedInches(item, wantedInches)) continue;
+        if (isHidrolavadoraQuery(query) && !passesHidrolavadoraPrincipalNoun(item.titulo, query)) continue;
         const urlBase = (item.url || '').split('#')[0];
         const precio = Number(item.precio) || 0;
         const key = urlBase ? `${urlBase}${precio}` : `${item.titulo || ''}|${precio}`;
@@ -109,9 +119,7 @@ async function searchMercadoLibreApi(query, categoryId = null, condicion = 'nuev
       if (data.results.length < PAGE_SIZE) break;
     }
 
-    if (wantedInches != null) {
-      collected.sort((a, b) => (Number(a.precio) || 0) - (Number(b.precio) || 0));
-    }
+    collected.sort((a, b) => (Number(a.precio) || 0) - (Number(b.precio) || 0));
     return { items: collected, tokenErrorDetected };
   };
 
