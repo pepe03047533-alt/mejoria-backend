@@ -413,14 +413,13 @@ function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 
   let relevant = pool.filter(p => p._score > 0);
 
   // 5b. Filtro de marca obligatorio: si la query contiene una marca conocida,
-  // descartar productos cuyo título no la contenga
+  // descartar productos cuyo título no la contenga (hard filter, sin fallback)
   const queryBrands = detectQueryBrands(query);
   if (queryBrands.length > 0) {
-    const brandFiltered = relevant.filter(p => {
+    relevant = relevant.filter(p => {
       const tLower = (p.titulo || '').toLowerCase();
       return queryBrands.every(brand => tLower.includes(brand));
     });
-    if (brandFiltered.length > 0) relevant = brandFiltered;
   }
 
   // Celulares: exigir al menos marca o modelo fuerte para no pasar falsos positivos
