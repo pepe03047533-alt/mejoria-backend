@@ -98,12 +98,20 @@ async function searchMercadoLibreApi(query, categoryId = null, condicion = 'nuev
       });
       const hasTokenError = status === 401 || data?.error === 'invalid_token' || data?.message === 'invalid_token';
       if (hasTokenError) {
+        console.log(`  [ML API] Token error (status=${status}): ${data?.error || data?.message || 'unknown'}`);
         tokenErrorDetected = true;
         break;
       }
-      if (!data || data.error || status >= 400 || !Array.isArray(data.results)) break;
+      if (!data || data.error || status >= 400 || !Array.isArray(data.results)) {
+        console.log(`  [ML API] Error en respuesta: status=${status}, error=${data?.error || 'none'}, message=${data?.message || 'none'}, hasResults=${Array.isArray(data?.results)}`);
+        break;
+      }
+      console.log(`  [ML API] Página offset=${offset}: ${data.results.length} items crudos, total_disponible=${data.paging?.total || '?'}`);
       const mapped = data.results.map(mapMeliItem).filter(Boolean);
-      if (!mapped.length) break;
+      if (!mapped.length) {
+        console.log(`  [ML API] 0 items válidos después de mapear (precios=0 o sin permalink)`);
+        break;
+      }
       for (const item of mapped) {
         if (!productMatchesWantedInches(item, wantedInches)) continue;
         if (isHidrolavadoraQuery(query) && !passesHidrolavadoraPrincipalNoun(item.titulo, query)) continue;
@@ -124,6 +132,7 @@ async function searchMercadoLibreApi(query, categoryId = null, condicion = 'nuev
 
   try {
     const token = await getValidAccessToken();
+    console.log(`  [ML API] Iniciando búsqueda (token=${token ? 'sí' : 'NO'}): "${query}"`);
     const firstAttempt = await performSearch(token);
     if (!firstAttempt.tokenErrorDetected) {
       return firstAttempt.items;
