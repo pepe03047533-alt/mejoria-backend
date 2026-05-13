@@ -43,13 +43,13 @@ export default function Results() {
     }, [query]); // IMPORTANTE: Solo se dispara cuando cambia la palabra buscada
 
     return (
-        <div className="min-h-screen bg-[#0b1120] text-white">
+        <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#0b1120] text-white">
             {/* 1. La barra va afuera del contenido de resultados para evitar bucles */}
-            <div className="p-6 border-b border-white/5">
+            <div className="w-full max-w-full border-b border-white/5 px-4 py-5 sm:p-6">
                 <SearchBar initialValue={query} />
             </div>
             
-            <main className="max-w-7xl mx-auto p-6">
+            <main className="w-full max-w-7xl mx-auto px-4 py-5 sm:p-6">
                 {loading && (
                     <div className="flex flex-col items-center justify-center py-20">
                         <Loader />
@@ -58,7 +58,7 @@ export default function Results() {
                 )}
                 
                 {error && !loading && (
-                    <div className="text-center p-10 bg-red-500/10 border border-red-500/20 rounded-2xl">
+                    <div className="text-center px-4 py-8 sm:p-10 bg-red-500/10 border border-red-500/20 rounded-2xl">
                         <p className="text-red-400 font-medium">{error}</p>
                     </div>
                 )}
@@ -66,10 +66,11 @@ export default function Results() {
                 {!loading && !error && products.length > 0 && (
                     <>
                         <div className="mb-5 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
-                            Mostrando {products.length} opciones nuevas ordenadas por precio (menor a mayor). 
-                            La primera tarjeta está marcada como <span className="font-semibold">Mejor Precio</span>.
+                            Mostrando {products.length} opciones nuevas: primero las que mejor coinciden con tu búsqueda;
+                            si el motor las considera muy parecidas, desempata con el precio más bajo.
+                            La primera tarjeta está marcada como <span className="font-semibold">Recomendada</span>.
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div className="grid w-full min-w-0 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                             {products.map((item, index) => (
                                 <ProductCard 
                                     key={`${item.id || index}`}

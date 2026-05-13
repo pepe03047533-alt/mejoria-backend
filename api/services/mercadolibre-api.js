@@ -1,14 +1,37 @@
 const axios = require('axios');
 const { getValidAccessToken, forceRefreshAccessToken } = require('./meliOAuth');
 const logger = require('../utils/logger');
-const MIN_RESULTS = 3;
+const { extractWantedTvInches, productMatchesWantedInches } = require('../utils/tvScreenMatch');
+
+const MIN_VALID_PRODUCTS = 50;
+const PAGE_SIZE = 100;
+const MAX_SEARCH_OFFSET = 2000;
+const MAX_SEARCH_OFFSET_TV_INCHES = 8000;
 
 function mapMeliItem(item) {
   if (!item || !item.permalink) return null;
 
-  const price = Number(item.price) || 0;
-  const original = Number(item.original_price) || 0;
+  let price = Number(item.price);
+  if (!price || price <= 0) {
+    const sp = item.sale_price;
+    if (sp != null) {
+      price = typeof sp === 'object' ? Number(sp.amount ?? sp.value ?? 0) : Number(sp);
+    }
+  }
+  if (!price || price <= 0) {
+    const prs = item.prices;
+    if (Array.isArray(prs) && prs[0]) {
+      price = Number(prs[0].amount ?? prs[0].price ?? 0);
+    } else if (prs && typeof prs === 'object' && Array.isArray(prs.prices) && prs.prices[0]) {
+      price = Number(prs.prices[0].amount ?? 0);
+    }
+  }
+  if (!price || price <= 0) {
+    price = Number(item.original_price) || 0;
+  }
   if (price <= 0) return null;
+
+  const original = Number(item.original_price) || 0;
 
   const descuento = original > price && original > 0
     ? Math.round(((original - price) / original) * 100)
@@ -43,12 +66,17 @@ async function searchMercadoLibreApi(query, categoryId = null, condicion = 'nuev
     const seen = new Set();
     let offset = 0;
     let tokenErrorDetected = false;
+    const wantedInches = extractWantedTvInches(query);
+    const maxOffset = wantedInches != null ? MAX_SEARCH_OFFSET_TV_INCHES : MAX_SEARCH_OFFSET;
 
-    while (collected.length < MIN_RESULTS && offset <= 100) {
+    /** Con TV por pulgadas hace falta recorrer páginas ordenadas por precio (suelen aparecer primero las más chicas). */
+    const sortMode = wantedInches != null ? 'price_asc' : 'relevance';
+
+    while (collected.length < MIN_VALID_PRODUCTS && offset < maxOffset) {
       const params = {
         q: query,
-        sort: 'price_asc',
-        limit: 50,
+        sort: sortMode,
+        limit: PAGE_SIZE,
         offset,
         condition: normalizedCondition,
       };
@@ -68,17 +96,22 @@ async function searchMercadoLibreApi(query, categoryId = null, condicion = 'nuev
       const mapped = data.results.map(mapMeliItem).filter(Boolean);
       if (!mapped.length) break;
       for (const item of mapped) {
-        const key = item.url || `${item.titulo}-${item.precio}`;
+        if (!productMatchesWantedInches(item, wantedInches)) continue;
+        const urlBase = (item.url || '').split('#')[0];
+        const precio = Number(item.precio) || 0;
+        const key = urlBase ? `${urlBase}${precio}` : `${item.titulo || ''}|${precio}`;
         if (seen.has(key)) continue;
         seen.add(key);
         collected.push(item);
       }
       offset += data.results.length;
-      if (data.results.length < 50) break;
+      if (data.results.length < PAGE_SIZE) break;
     }
 
-    collected.sort((a, b) => (Number(a.precio) || 0) - (Number(b.precio) || 0));
-    return { items: collected.slice(0, Math.max(MIN_RESULTS, collected.length)), tokenErrorDetected };
+    if (wantedInches != null) {
+      collected.sort((a, b) => (Number(a.precio) || 0) - (Number(b.precio) || 0));
+    }
+    return { items: collected, tokenErrorDetected };
   };
 
   try {

@@ -10,7 +10,7 @@ import Login from './pages/Login'
 
 function App() {
   return (
-    <div className="min-h-screen bg-hero">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-hero">
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />

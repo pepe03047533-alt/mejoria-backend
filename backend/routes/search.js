@@ -56,6 +56,8 @@ function normalizePriceFields(product) {
   };
 }
 
+const MAX_SEARCH_RESULTS = 5;
+
 router.get('/', async (req, res) => {
   const { q, condicion } = req.query;
   if (!q || q.trim().length === 0) {
@@ -77,8 +79,14 @@ router.get('/', async (req, res) => {
 
     console.log(`\n🔍 Búsqueda: "${normalizedQuery}" | Condición: ${cond}`);
 
-    const results = await Promise.allSettled([
-      withTimeout(searchMercadoLibre(normalizedQuery, categoryId, cond), 35000, 'MercadoLibre'),
+    const mlResult = await withTimeout(
+      searchMercadoLibre(normalizedQuery, categoryId, cond),
+      35000,
+      'MercadoLibre',
+    );
+    const mlProducts = Array.isArray(mlResult) ? mlResult : [];
+
+    const otherResults = await Promise.allSettled([
       withTimeout(searchCarrefour(normalizedQuery), 8000, 'Carrefour'),
       withTimeout(searchMusimundo(normalizedQuery), 8000, 'Musimundo'),
       withTimeout(searchBing(normalizedQuery), 8000, 'Bing'),
@@ -90,8 +98,9 @@ router.get('/', async (req, res) => {
       withTimeout(searchRegionales(normalizedQuery), 8000, 'Regionales'),
     ]);
 
-    const getResults = (r) => r.status === 'fulfilled' ? r.value : [];
-    const allProducts = results.flatMap(getResults);
+    const getResults = (r) => (r.status === 'fulfilled' ? r.value : []);
+    const otherProducts = otherResults.flatMap(getResults);
+    const allProducts = [...mlProducts, ...otherProducts];
 
     const elapsed = Date.now() - start;
     console.log(`  → ${allProducts.length} productos en ${elapsed}ms`);
@@ -100,32 +109,33 @@ router.get('/', async (req, res) => {
       .map(normalizePriceFields)
       .filter(Boolean);
 
-    const ranked = normalizeAndRank(normalizedProducts, 50, normalizedQuery, cond)
-      .sort((a, b) => (Number(a.precio) || 0) - (Number(b.precio) || 0));
+    const ranked = normalizeAndRank(normalizedProducts, MAX_SEARCH_RESULTS, normalizedQuery, cond, {
+      strictLowestPrice: false,
+    });
 
-    const top10 = ranked.slice(0, 10);
+    const top = ranked;
 
     // Registrar búsqueda en el historial del usuario (si existe)
     if (req.user) {
       try {
-        await dbService.logSearchHistory(req.user.id, normalizedQuery, { condicion: cond }, top10.length);
+        await dbService.logSearchHistory(req.user.id, normalizedQuery, { condicion: cond }, top.length);
       } catch (err) {
         console.log('Error registrando búsqueda:', err.message);
       }
     }
 
-    if (top10.length < 3) {
+    if (top.length < 1) {
       return res.status(404).json({
-        error: 'No encontramos al menos 3 productos nuevos con precio válido para comparar.',
+        error: 'No encontramos productos con precio válido para tu búsqueda.',
       });
     }
 
     res.json({
       query: normalizedQuery,
-      total: top10.length,
+      total: top.length,
       category: catKey,
-      results: top10,
-      products: top10,
+      results: top,
+      products: top,
     });
   } catch (error) {
     console.error('Error:', error);

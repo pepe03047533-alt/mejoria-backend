@@ -37,7 +37,7 @@ export default function ProductCard({ product, rank, query, renderTime, isBestPr
         <span className="text-sm font-semibold text-orange-300">{getRankBadge(rank)}</span>
         {isBestPrice && (
           <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded-full">
-            Mejor Precio
+            Recomendada
           </span>
         )}
         {hasDiscount && (

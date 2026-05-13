@@ -30,10 +30,10 @@ export default function Home() {
   }, [navigate])
 
   return (
-    <div className="min-h-screen flex flex-col items-center px-4 pt-12">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col items-center px-4 sm:px-6 pt-8 sm:pt-12">
       
       {/* Header con saludo */}
-      <div className="w-full max-w-2xl flex justify-end mb-4">
+      <div className="w-full max-w-2xl min-w-0 flex justify-end mb-4">
         <UserGreeting />
       </div>
 
@@ -42,16 +42,11 @@ export default function Home() {
         src="/logo.png"
         alt="MejorIA"
         draggable={false}
-        style={{
-          width: 550,
-          maxWidth: '85vw',
-          objectFit: 'contain',
-          userSelect: 'none',
-        }}
+        className="w-full max-w-[min(85vw,550px)] object-contain select-none"
       />
 
       {/* Barra de búsqueda */}
-      <div className="w-full max-w-2xl -mt-16">
+      <div className="w-full max-w-2xl min-w-0 -mt-10 sm:-mt-16">
         <SearchBar autoFocus onSearch={handleSearch} />
       </div>
 

@@ -12,20 +12,20 @@ export default function MLBest() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10 backdrop-blur-xl" style={{ background: 'rgba(10,15,46,0.9)' }}>
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
+        <div className="w-full max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center gap-4">
           <Link to="/" className="shrink-0">
             <img src="/logo.png" alt="MejorIA" className="h-10 w-10 object-contain rounded-full" />
           </Link>
-          <div className="flex-1">
+          <div className="w-full min-w-0 flex-1">
             <SearchBar initialValue={query} onSearch={(q) => { setQuery(q); handleSearch(q); }} />
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-8">
         {!searchQuery ? (
           <div className="text-center py-20">
             <h1 className="text-3xl font-bold text-white mb-4">Comparador ML</h1>
@@ -33,7 +33,7 @@ export default function MLBest() {
               Buscá un producto y te mostramos la mejor opción internacional 
               y la mejor opción nacional de MercadoLibre.
             </p>
-            <div className="flex justify-center gap-4 text-sm">
+            <div className="flex flex-wrap justify-center gap-4 text-sm">
               <div className="flex items-center gap-2 text-red-300">
                 <span>🌍</span>
                 <span>Internacional (más barato)</span>

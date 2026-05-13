@@ -1,3 +1,5 @@
+const { extractWantedTvInches, productMatchesWantedInches } = require('./tvScreenMatch');
+
 const ML_CATEGORIES = {
   electronica: 'MLA1000',
   celulares: 'MLA1051',
@@ -15,6 +17,7 @@ function detectCategory(query) {
   if (/notebook|laptop|pc|computadora|monitor/.test(q)) return 'computacion';
   if (/tv|televisor|smart tv|led|oled|audio/.test(q)) return 'tv_audio';
   if (/heladera|freezer|lavarropa|microondas|cocina/.test(q)) return 'electrodomesticos';
+  if (/hidrolavadora|hidro[\s-]*lavadora/.test(q)) return 'herramientas';
   if (/taladro|herramienta|atornillador/.test(q)) return 'herramientas';
   if (/mueble|silla|mesa|cama|colchon/.test(q)) return 'hogar';
   if (/auto|moto|neumatico|cubierta/.test(q)) return 'autos';
@@ -39,9 +42,112 @@ const EXCLUSION_PATTERNS = [
   /\b(flex|display|bateria|batería|pin de carga)\b/i,
 ];
 
-function isExcluded(titulo) {
-  const t = titulo.toLowerCase();
-  return EXCLUSION_PATTERNS.some(p => p.test(t));
+/** Títulos que empiezan por pieza/accesorio típico (búsqueda de hidrolavadora completa). */
+const HIDROLAVADORA_PART_LEAD = /^\s*(kit|juego|acople|manguera|pistola|presostato|crapodina|repuesto|repuestos|retenes?|rodamiento|sellos|boquilla|pico|juntas?|filtro|flexible|lanza|enrollador|burlete|tubo|conector|adaptador|terminal|válvulas?|valvulas?|motor|bobina|carb[oó]n|esmeril|esmeriles|o-?ring|oring)\b/i;
+
+function normalizeTitleForLead(titulo) {
+  return (titulo || '')
+    .replace(/^\uFEFF/, '')
+    .replace(/^[\s\u00A0]+/, '')
+    .trim();
+}
+
+function normalizeSpecText(s) {
+  return (s || '').toLowerCase().replace(/\./g, '').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Números técnicos extraídos de la query (bar, psi, watts/w).
+ * @returns {Array<{ value: string, unit: 'bar' | 'psi' | 'watts' }>}
+ */
+function extractSpecs(query) {
+  if (!query || typeof query !== 'string') return [];
+  const raw = query.toLowerCase().replace(/,/g, '.');
+  const out = [];
+  const seen = new Set();
+
+  const push = (numStr, unit) => {
+    const value = String(numStr).replace(/^0+(\d)/, '$1');
+    const key = `${value}|${unit}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ value, unit });
+  };
+
+  const reBar = /\b(\d+)\s*bar\b/gi;
+  let m;
+  while ((m = reBar.exec(raw)) !== null) push(m[1], 'bar');
+
+  const rePsi = /\b(\d+)\s*psi\b/gi;
+  while ((m = rePsi.exec(raw)) !== null) push(m[1], 'psi');
+
+  const reWatts = /\b(\d+)\s*(watts?|w|vatios)\b/gi;
+  while ((m = reWatts.exec(raw)) !== null) push(m[1], 'watts');
+
+  return out;
+}
+
+function titleMentionsSpecNumber(tituloNorm, value) {
+  if (!value || !tituloNorm) return false;
+  if (value.length >= 4) return tituloNorm.includes(value);
+  return new RegExp(`(^|[^0-9])${value}([^0-9]|$)`).test(tituloNorm);
+}
+
+function isHidrolavadoraQuery(query) {
+  return /\bhidrolavadora\b|\bhidro[\s-]*lavadora\b/i.test(query || '');
+}
+
+/** Accesorios que no pueden abrir el título si la búsqueda es hidrolavadora. */
+const HIDROLAVADORA_IDENTITY_BLOCKLIST =
+  /^(manguera|crapodina|ret[eé]n|retenes?|acople|v[aá]lvulas?|valvulas?|puntero|lanza|pistola)\b/i;
+
+/**
+ * Identidad estricta: el título debe empezar con "hidrolavadora" (equipo), no con accesorio.
+ */
+function passesHidrolavadoraPrincipalNoun(titulo, query) {
+  if (!isHidrolavadoraQuery(query)) return true;
+  const head = normalizeTitleForLead(titulo);
+  const headLower = head.toLowerCase();
+  if (HIDROLAVADORA_IDENTITY_BLOCKLIST.test(headLower)) return false;
+  return /^hidrolavadora\b|^hidro[\s-]*lavadora\b/i.test(headLower);
+}
+
+/** Predicados de coincidencia por specs extraídos de la query. */
+function extractHidrolavadoraTechnicalMeasures(query) {
+  if (!isHidrolavadoraQuery(query)) return [];
+  return extractSpecs(query).map((entry) => {
+    const v = entry.value;
+    return (t) => titleMentionsSpecNumber(t, v);
+  });
+}
+
+function titleMatchesAnyTechnicalMeasure(titulo, measures) {
+  const t = normalizeSpecText(titulo);
+  return measures.some((fn) => fn(t));
+}
+
+/**
+ * Identidad estricta + refinamiento por specs: si hay medidas en la query, priorizar coincidencias;
+ * si ninguna coincide, devolver solo el pool que pasó identidad.
+ */
+function applyHidrolavadoraIdentityAndSpecRefinement(pool, query) {
+  if (!isHidrolavadoraQuery(query) || !pool.length) return pool;
+
+  const identity = pool.filter((p) => passesHidrolavadoraPrincipalNoun(p.titulo, query));
+  if (identity.length === 0) return pool;
+
+  const measures = extractHidrolavadoraTechnicalMeasures(query);
+  if (measures.length === 0) return identity;
+
+  const specPreferred = identity.filter((p) => titleMatchesAnyTechnicalMeasure(p.titulo, measures));
+  return specPreferred.length > 0 ? specPreferred : identity;
+}
+
+function isExcluded(titulo, query = '') {
+  const t = (titulo || '').toLowerCase();
+  if (EXCLUSION_PATTERNS.some(p => p.test(t))) return true;
+  if (/\bhidrolavadora\b|\bhidro[\s-]*lavadora\b/i.test(query) && HIDROLAVADORA_PART_LEAD.test(normalizeTitleForLead(titulo))) return true;
+  return false;
 }
 
 function isDirectUrl(url) {
@@ -50,6 +156,26 @@ function isDirectUrl(url) {
   if (url.includes('/search?') || url.includes('/busca?')) return false;
   if (url.includes('/categoria/')) return false;
   return true;
+}
+
+function tvQueryWantsHighResolution(query) {
+  const q = (query || '').toLowerCase();
+  return /\b4k\b|\buhd\b|\b2160p?\b|\b3840\b|\b8k\b|\bqled\b|\boled\b|\bneo\s*qled\b/i.test(q);
+}
+
+function tvListingLooksEntryLevelOnly(titulo, url) {
+  const haystack = `${titulo || ''} ${url || ''}`.toLowerCase();
+  if (/\b4k\b|\buhd\b|\b2160\b|\b3840\b|\b8k\b|\bqled\b|\boled\b|\bqned\b/i.test(haystack)) return false;
+  return /\bfull\s*-?hd\b|\bfullhd\b|\bfull-hd\b|\bhd\s*ready\b|\b720p\b|\b720\s*p\b|\b768p\b|\b1366\s*w\b/i.test(haystack);
+}
+
+/** Evita que una búsqueda de TV 4K/QLED muestre variantes Full HD más baratas (mismo modelo distinta resolución). */
+function isTvResolutionConflict(product, query) {
+  if (!tvQueryWantsHighResolution(query)) return false;
+  const q = (query || '').toLowerCase();
+  const tvContext = detectCategory(query) === 'tv_audio' || /\b(smart\s*)?tv\b|\btelevisor\b/i.test(q);
+  if (!tvContext) return false;
+  return tvListingLooksEntryLevelOnly(product.titulo, product.url);
 }
 
 /**
@@ -64,6 +190,17 @@ function tokenizeQuery(q) {
 
 function tokenMatchesTitle(tituloLower, word) {
   if (tituloLower.includes(word)) return true;
+
+  const w = word.toLowerCase();
+  const tvModel = w.match(/^(\d{2})(q[0-9][a-z0-9]*)$/i);
+  if (tvModel) {
+    const inch = tvModel[1];
+    const tail = tvModel[2].toLowerCase();
+    if (tituloLower.includes(tail) && new RegExp(`(^|[^0-9])${inch}([^0-9]|$)`).test(tituloLower)) return true;
+    const compact = tituloLower.replace(/\s+/g, '');
+    if (compact.includes(inch + tail)) return true;
+  }
+
   const num = word.match(/^(\d+)(gb|g|tb)?$/i);
   if (num) {
     const n = num[1];
@@ -135,10 +272,37 @@ function scoreProduct(titulo, query) {
     score = Math.max(0, Math.round(score * 0.15));
   }
 
+  score = applyHidrolavadoraSpecScorePenalty(score, titulo, query);
+
   return Math.max(score, 0);
 }
 
-function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 'nuevo') {
+/**
+ * Si la query de hidrolavadora pide números (bar/psi/watts) y el título no menciona ninguno, penalizar fuerte.
+ */
+function applyHidrolavadoraSpecScorePenalty(score, titulo, query) {
+  if (!isHidrolavadoraQuery(query) || score <= 0) return score;
+  const specs = extractSpecs(query);
+  if (specs.length === 0) return score;
+
+  const t = normalizeSpecText(titulo);
+  const nums = [...new Set(specs.map((s) => s.value))];
+  const mentionsAny = nums.some((n) => titleMentionsSpecNumber(t, n));
+  if (mentionsAny) return score;
+
+  return Math.max(0, Math.round(score * 0.07));
+}
+
+function sortByPriceMercadoLibreTiebreak(a, b) {
+  const pa = Number(a.precio) || 0;
+  const pb = Number(b.precio) || 0;
+  if (pa !== pb) return pa - pb;
+  const storeRank = (p) => (p.tienda === 'MercadoLibre' ? 0 : 1);
+  return storeRank(a) - storeRank(b);
+}
+
+function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 'nuevo', options = {}) {
+  const { strictLowestPrice = false } = options;
   if (!allProducts || allProducts.length === 0) return [];
 
   // 1. Filtrar por condición
@@ -156,10 +320,18 @@ function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 
   }
 
   // 2. Filtrar exclusiones (repuestos, accesorios, servicios)
-  pool = pool.filter(p => !isExcluded(p.titulo || ''));
+  pool = pool.filter(p => !isExcluded(p.titulo || '', query));
+
+  pool = applyHidrolavadoraIdentityAndSpecRefinement(pool, query);
 
   // 3. Filtrar URLs de listados
   pool = pool.filter(p => isDirectUrl(p.url));
+
+  // TV: no mezclar variantes Full HD cuando la búsqueda pide explícitamente 4K/UHD/QLED
+  pool = pool.filter(p => !isTvResolutionConflict(p, query));
+
+  const wantedInches = extractWantedTvInches(query);
+  pool = pool.filter(p => productMatchesWantedInches(p, wantedInches));
 
   // 4. Calcular score de relevancia
   pool = pool.map(p => ({
@@ -183,19 +355,21 @@ function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 
     });
   }
 
-  // 6. Ordenar por relevancia primero; entre scores parecidos, precio ascendente
-  relevant.sort((a, b) => {
-    const scoreDiff = b._score - a._score;
-    if (Math.abs(scoreDiff) >= 3) return scoreDiff;
-    if (a.precio !== b.precio) return a.precio - b.precio;
-    return scoreDiff;
-  });
+  // 6. Orden previo a deduplicar: relevancia o precio según modo
+  if (strictLowestPrice) {
+    relevant.sort(sortByPriceMercadoLibreTiebreak);
+  } else {
+    relevant.sort((a, b) => {
+      const scoreDiff = b._score - a._score;
+      if (Math.abs(scoreDiff) >= 3) return scoreDiff;
+      if (a.precio !== b.precio) return a.precio - b.precio;
+      return scoreDiff;
+    });
+  }
 
   // 7. Deduplicar: mantener solo el MÁS BARATO de cada producto similar
-  // También eliminar productos de ML con mismo precio exacto
   const deduped = [];
   const seenTitles = new Map();
-  const seenMLPrices = new Set();
 
   for (const p of relevant) {
     // Normalizar título para comparar similitud
@@ -203,13 +377,7 @@ function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 
       .replace(/[^a-z0-9\s]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
-    
-    // Si es MercadoLibre, no permitir dos productos con el mismo precio
-    if (p.tienda === 'MercadoLibre') {
-      if (seenMLPrices.has(p.precio)) continue;
-      seenMLPrices.add(p.precio);
-    }
-    
+
     // Verificar si ya existe un producto muy similar
     let isDuplicate = false;
     for (const [existingTitle, idx] of seenTitles) {
@@ -233,10 +401,21 @@ function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 
     }
   }
 
-  // Orden final estricto por precio ascendente (barato primero).
-  deduped.sort((a, b) => a.precio - b.precio);
+  // Orden final: modo búsqueda global = siempre el precio más bajo (empate: Mercado Libre primero)
+  if (strictLowestPrice) {
+    deduped.sort(sortByPriceMercadoLibreTiebreak);
+  } else {
+    deduped.sort((a, b) => {
+      const scoreDiff = b._score - a._score;
+      if (Math.abs(scoreDiff) >= 3) return scoreDiff;
+      const pa = Number(a.precio) || 0;
+      const pb = Number(b.precio) || 0;
+      if (pa !== pb) return pa - pb;
+      return scoreDiff;
+    });
+  }
 
   return deduped.slice(0, maxResults);
 }
 
-module.exports = { normalizeAndRank, detectCategory, ML_CATEGORIES };
+module.exports = { normalizeAndRank, detectCategory, ML_CATEGORIES, extractSpecs };

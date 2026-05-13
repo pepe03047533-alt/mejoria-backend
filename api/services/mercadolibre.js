@@ -13,13 +13,14 @@ async function searchMercadoLibre(query, categoryId = null, condicion = 'nuevo')
   const seen = new Set();
 
   for (const p of merged) {
-    const key = (p.url || '').split('#')[0] || `${p.titulo}-${p.precio}`;
+    const urlBase = (p.url || '').split('#')[0];
+    const precio = Number(p.precio) || 0;
+    const key = urlBase ? `${urlBase}${precio}` : `${p.titulo || ''}|${precio}`;
     if (seen.has(key)) continue;
     seen.add(key);
     deduped.push(p);
   }
 
-  deduped.sort((a, b) => (Number(a.precio) || 0) - (Number(b.precio) || 0));
   return deduped;
 }
 
