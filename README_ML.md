@@ -18,8 +18,12 @@ Si la conexion con Mercado Libre falla (por ejemplo, refresh token invalido), se
    - Ejecutar nuevamente `GET /api/test-meli`.
    - Esperado: `ok: true` y `connected: true`.
 
-4. Si sigue fallando
-   - Confirmar variables en Railway:
+4. Deploy en Vercel
+   - El proyecto debe desplegarse desde la **raíz** del repo (no solo `frontend/`).
+   - Si existe `VITE_API_URL` apuntando a Railway, **eliminala** en Vercel para usar el mismo dominio (`/api/...`).
+
+5. Si sigue fallando
+   - Confirmar variables en Vercel (o Railway si usás backend separado):
      - `MERCADOLIBRE_APP_ID`
      - `MERCADOLIBRE_SECRET_KEY`
      - `MERCADOLIBRE_REDIRECT_URI`

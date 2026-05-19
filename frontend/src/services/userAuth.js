@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { API_BASE_URL } from '../config/api'
+import { API_BASE_URL, getApiOrigin } from '../config/api'
 
 const API_URL = API_BASE_URL
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -82,10 +82,11 @@ export async function handleMeliCallback(code, state) {
 
 /** Abre la autorización de Mercado Libre (redirige al dominio del backend). */
 export function startMercadoLibreOAuth() {
-  if (!API_URL) {
-    throw new Error('Configurá VITE_API_URL para conectar Mercado Libre')
+  const base = getApiOrigin()
+  if (!base) {
+    throw new Error('No se pudo determinar la URL del backend')
   }
-  window.location.href = `${API_URL}/api/auth/meli/start`
+  window.location.href = `${base}/api/auth/meli/start`
 }
 
 // Login como invitado

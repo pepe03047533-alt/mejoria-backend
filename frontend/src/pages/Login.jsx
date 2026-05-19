@@ -7,7 +7,7 @@ import {
   getUser,
   isAuthenticated,
 } from '../services/userAuth'
-import { API_BASE_URL } from '../config/api'
+import { API_BASE_URL, getApiOrigin } from '../config/api'
 
 const GOOGLE_CONFIGURED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim())
 
@@ -116,7 +116,7 @@ export default function Login() {
           </button>
 
           <p className="text-white/50 text-xs text-center">
-            Backend: <span className="text-white/70">{API_BASE_URL || '(no configurado)'}</span>
+            Backend: <span className="text-white/70">{getApiOrigin() || API_BASE_URL || '(mismo dominio)'}</span>
           </p>
         </div>
 

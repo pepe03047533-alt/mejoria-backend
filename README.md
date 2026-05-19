@@ -30,7 +30,25 @@ Abrí http://localhost:5173
 | `MERCADOLIBRE_APP_ID` | [developers.mercadolibre.com](https://developers.mercadolibre.com) | Opcional (funciona sin clave) |
 | `SERPAPI_KEY` | [serpapi.com](https://serpapi.com) | Opcional (50 búsquedas/mes gratis) |
 
-## Deploy
+## Deploy (recomendado: monolito en Vercel)
 
-- **Frontend** → [vercel.com](https://vercel.com): importar carpeta `frontend/`, agregar `VITE_API_URL=https://tu-backend.railway.app`
-- **Backend** → [railway.app](https://railway.app): importar carpeta `backend/`, agregar variables de entorno
+Importar el **repositorio completo** (raíz, no solo `frontend/`). El `vercel.json` de la raíz sirve el React build y las rutas `/api/*` con `api/index.js`.
+
+1. En Vercel: **Root Directory** = `.` (raíz del repo)
+2. Variables de entorno (proyecto): `GEMINI_API_KEY`, `MONGODB_URI` o `MONGO_URL`, `MERCADOLIBRE_*`, `JWT_SECRET`, etc.
+3. Dominio `www.mejoria.com.ar` apuntando a ese proyecto
+4. **No hace falta** `VITE_API_URL` si front y API comparten dominio
+
+### Desarrollo local
+
+```bash
+# Terminal 1 — API
+npm install && npm run dev
+
+# Terminal 2 — Frontend (proxy /api → :3001)
+cd frontend && npm install && npm run dev
+```
+
+### Backend alternativo (Railway)
+
+Si el API corre en otro host, definí en Vercel (build del frontend): `VITE_API_URL=https://tu-app.railway.app`
