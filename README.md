@@ -32,9 +32,12 @@ Abrí http://localhost:5173
 
 ## Deploy (recomendado: monolito en Vercel)
 
-Importar el **repositorio completo** (raíz, no solo `frontend/`). El `vercel.json` de la raíz sirve el React build y las rutas `/api/*` con `api/index.js`.
+Funciona con **Root Directory** = `frontend` (recomendado, el que ya usás) o con la raíz del repo.
 
-1. En Vercel: **Root Directory** = `.` (raíz del repo)
+- **`frontend/`**: en cada build se copia `api/` → `frontend/server/` y Vercel expone `/api/*` vía `frontend/api/index.cjs`.
+- **Raíz del repo**: `vercel.json` en la raíz (builds clásicos).
+
+1. En Vercel: **Root Directory** = `frontend` (o `.` si preferís monolito desde raíz)
 2. Variables de entorno (proyecto): `GEMINI_API_KEY`, `MONGODB_URI` o `MONGO_URL`, `MERCADOLIBRE_*`, `JWT_SECRET`, etc.
 3. Dominio `www.mejoria.com.ar` apuntando a ese proyecto
 4. **No hace falta** `VITE_API_URL` si front y API comparten dominio

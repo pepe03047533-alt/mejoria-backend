@@ -1,8 +1,22 @@
 {
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index.cjs"
+    },
     {
       "source": "/((?!api/|assets/|favicon\\.ico|logo\\.png|robots\\.txt|sitemap\\.xml).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/index.cjs": {
+      "maxDuration": 60,
+      "memory": 1024,
+      "includeFiles": "{tiendas-regionales.json,server/**}"
+    }
+  }
 }
