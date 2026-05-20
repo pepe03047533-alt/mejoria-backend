@@ -17,8 +17,15 @@ if (!fs.existsSync(apiSrc)) {
   process.exit(1);
 }
 
-fs.rmSync(serverDest, { recursive: true, force: true });
-fs.cpSync(apiSrc, serverDest, { recursive: true });
+if (fs.existsSync(serverDest)) {
+  for (const name of fs.readdirSync(serverDest)) {
+    if (name === 'data') continue;
+    fs.rmSync(path.join(serverDest, name), { recursive: true, force: true });
+  }
+} else {
+  fs.mkdirSync(serverDest, { recursive: true });
+}
+fs.cpSync(apiSrc, serverDest, { recursive: true, force: true });
 
 fs.writeFileSync(
   path.join(serverDest, 'package.json'),

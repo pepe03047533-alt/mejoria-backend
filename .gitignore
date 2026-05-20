@@ -6,6 +6,7 @@ package-lock.json
 dist/
 build/
 frontend/server/
+frontend/server/data/
 frontend/tiendas-regionales.json
 
 # Environment files
