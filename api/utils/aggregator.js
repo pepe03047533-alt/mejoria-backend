@@ -214,6 +214,18 @@ function tokenMatchesTitle(tituloLower, word) {
     if (tituloLower.includes(`${n}cc`) || tituloLower.includes(`${n} ml`) || tituloLower.includes(`${n}ml`)) return true;
   }
 
+  if (w === 'unidades' || w === 'unidad') {
+    if (/\bunid(?:ades)?\b|\b\d+\s*u\b/i.test(tituloLower)) return true;
+    if (/\bpack\b/i.test(tituloLower) && /\bx\s*\d+\b/i.test(tituloLower)) return true;
+  }
+
+  const packUnit = w.match(/^x(\d+)$/i);
+  if (packUnit) {
+    const n = packUnit[1];
+    if (new RegExp(`\\bx\\s*${n}\\b`, 'i').test(tituloLower)) return true;
+    if (tituloLower.includes(`x${n}`)) return true;
+  }
+
   const tvModel = w.match(/^(\d{2})(q[0-9][a-z0-9]*)$/i);
   if (tvModel) {
     const inch = tvModel[1];

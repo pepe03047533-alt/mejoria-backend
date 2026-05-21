@@ -58,6 +58,15 @@ function normalizePriceFields(product) {
 
 const MAX_SEARCH_RESULTS = 5;
 
+/** ML y scrapers rinden mejor sin "unidades" redundante si ya hay pack xN. */
+function simplifyQueryForSources(q) {
+  let s = q.replace(/\s+/g, ' ').trim();
+  if (/\bpack\b/i.test(s) && /\bx\s*\d+\b/i.test(s)) {
+    s = s.replace(/\bunidades?\b/gi, ' ').replace(/\s+/g, ' ').trim();
+  }
+  return s;
+}
+
 router.get('/', async (req, res) => {
   const { q, condicion } = req.query;
   if (!q || q.trim().length === 0) {
@@ -77,25 +86,29 @@ router.get('/', async (req, res) => {
     const categoryId = catKey ? ML_CATEGORIES[catKey] : null;
     const cond = condicion === 'usado' ? 'usado' : 'nuevo';
 
+    const searchQuery = simplifyQueryForSources(normalizedQuery);
+    if (searchQuery !== normalizedQuery) {
+      console.log(`  → Query fuentes: "${searchQuery}"`);
+    }
     console.log(`\n🔍 Búsqueda: "${normalizedQuery}" | Condición: ${cond}`);
 
     const mlResult = await withTimeout(
-      searchMercadoLibre(normalizedQuery, categoryId, cond),
+      searchMercadoLibre(searchQuery, categoryId, cond),
       35000,
       'MercadoLibre',
     );
     const mlProducts = Array.isArray(mlResult) ? mlResult : [];
 
     const otherResults = await Promise.allSettled([
-      withTimeout(searchCarrefour(normalizedQuery), 8000, 'Carrefour'),
-      withTimeout(searchMusimundo(normalizedQuery), 8000, 'Musimundo'),
-      withTimeout(searchBing(normalizedQuery), 8000, 'Bing'),
-      withTimeout(searchJumbo(normalizedQuery), 8000, 'Jumbo'),
-      withTimeout(searchDisco(normalizedQuery), 8000, 'Disco'),
-      withTimeout(searchVea(normalizedQuery), 8000, 'Vea'),
-      withTimeout(searchEasy(normalizedQuery), 8000, 'Easy'),
-      withTimeout(searchSodimac(normalizedQuery), 8000, 'Sodimac'),
-      withTimeout(searchRegionales(normalizedQuery), 8000, 'Regionales'),
+      withTimeout(searchCarrefour(searchQuery), 8000, 'Carrefour'),
+      withTimeout(searchMusimundo(searchQuery), 8000, 'Musimundo'),
+      withTimeout(searchBing(searchQuery), 8000, 'Bing'),
+      withTimeout(searchJumbo(searchQuery), 8000, 'Jumbo'),
+      withTimeout(searchDisco(searchQuery), 8000, 'Disco'),
+      withTimeout(searchVea(searchQuery), 8000, 'Vea'),
+      withTimeout(searchEasy(searchQuery), 8000, 'Easy'),
+      withTimeout(searchSodimac(searchQuery), 8000, 'Sodimac'),
+      withTimeout(searchRegionales(searchQuery), 8000, 'Regionales'),
     ]);
 
     const getResults = (r) => (r.status === 'fulfilled' ? r.value : []);

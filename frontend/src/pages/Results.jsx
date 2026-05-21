@@ -30,7 +30,7 @@ export default function Results() {
                 console.error("Error en búsqueda:", err);
                 if (err.response?.status === 404) {
                     setProducts([]);
-                    setError(err.response.data.error || "Sin resultados.");
+                    setError(err.response?.data?.error || 'Sin resultados.');
                 } else {
                     setError("Error de conexión con el motor.");
                 }
