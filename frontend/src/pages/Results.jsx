@@ -66,7 +66,7 @@ export default function Results() {
                 {!loading && !error && products.length > 0 && (
                     <>
                         <div className="mb-5 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
-                            Mostrando {products.length} opciones del producto que pediste, ordenadas por precio (menor a mayor).
+                            Mostrando {products.length} opciones del producto que pediste, ordenadas por precio (menor a mayor; en packs se compara precio por unidad).
                             La primera es la más barata entre las que pasaron el filtro y está marcada como <span className="font-semibold">Mejor precio</span>.
                         </div>
                         <div className="grid w-full min-w-0 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">

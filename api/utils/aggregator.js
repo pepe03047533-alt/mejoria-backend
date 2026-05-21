@@ -205,6 +205,15 @@ function tokenMatchesTitle(tituloLower, word) {
   if (tituloLower.includes(word)) return true;
 
   const w = word.toLowerCase();
+
+  // Volumen / contenido: 473cc, 473ml, 473 ml, 1l, etc.
+  const vol = w.match(/^(\d+)(cc|ml|l|lt|litros?)?$/i) || w.match(/^(\d+)\s*(cc|ml|l|lt|litros?)$/i);
+  if (vol) {
+    const n = vol[1];
+    if (new RegExp(`\\b${n}\\s*(?:cc|ml|mililitros?|l|lt|litros?)\\b`, 'i').test(tituloLower)) return true;
+    if (tituloLower.includes(`${n}cc`) || tituloLower.includes(`${n} ml`) || tituloLower.includes(`${n}ml`)) return true;
+  }
+
   const tvModel = w.match(/^(\d{2})(q[0-9][a-z0-9]*)$/i);
   if (tvModel) {
     const inch = tvModel[1];
@@ -338,6 +347,30 @@ function sortByPriceMercadoLibreTiebreak(a, b) {
   return storeRank(a) - storeRank(b);
 }
 
+/** Cantidad en pack (x6, pack x6, 6 unidades). */
+function extractPackQuantity(titulo) {
+  const t = (titulo || '').toLowerCase();
+  const m = t.match(/\bpack\s*x\s*(\d+)\b|\bx\s*(\d+)\s*(?:unidades|u\.?|latas|unid)\b|\b(\d+)\s*u\b/);
+  if (!m) return 1;
+  const n = parseInt(m[1] || m[2] || m[3], 10);
+  return Number.isFinite(n) && n > 1 ? n : 1;
+}
+
+/** Precio comparable: total o por unidad si es pack. */
+function getComparablePrice(p) {
+  const price = Number(p.precio) || 0;
+  if (price <= 0) return Infinity;
+  const qty = extractPackQuantity(p.titulo);
+  return price / qty;
+}
+
+function sortByComparablePrice(a, b) {
+  const pa = getComparablePrice(a);
+  const pb = getComparablePrice(b);
+  if (pa !== pb) return pa - pb;
+  return sortByPriceMercadoLibreTiebreak(a, b);
+}
+
 /** Una fila por publicación ML; no fundir títulos casi iguales de vendedores distintos. */
 function getListingDedupeKey(p) {
   const url = ((p.url || '') + '').split('#')[0].split('?')[0].trim();
@@ -413,14 +446,13 @@ function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 
   let relevant = pool.filter(p => p._score > 0);
 
   // 5b. Filtro de marca obligatorio: si la query contiene una marca conocida,
-  // descartar productos cuyo título no la contenga
+  // descartar productos cuyo título no la contenga (hard filter, sin fallback)
   const queryBrands = detectQueryBrands(query);
   if (queryBrands.length > 0) {
-    const brandFiltered = relevant.filter(p => {
+    relevant = relevant.filter(p => {
       const tLower = (p.titulo || '').toLowerCase();
       return queryBrands.every(brand => tLower.includes(brand));
     });
-    if (brandFiltered.length > 0) relevant = brandFiltered;
   }
 
   // Celulares: exigir al menos marca o modelo fuerte para no pasar falsos positivos
@@ -436,14 +468,10 @@ function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 
     });
   }
 
-  // 6. Orden previo a deduplicar: 100% match arriba, luego relevancia y precio
+  // 6. Orden previo a deduplicar
   if (strictLowestPrice) {
-    relevant.sort((a, b) => {
-      const aFull = a._matchRatio >= 1 ? 1 : 0;
-      const bFull = b._matchRatio >= 1 ? 1 : 0;
-      if (aFull !== bFull) return bFull - aFull;
-      return sortByPriceMercadoLibreTiebreak(a, b);
-    });
+    // Menor precio (por unidad si es pack), sin priorizar match ratio parcial
+    relevant.sort(sortByComparablePrice);
   } else {
     relevant.sort((a, b) => {
       const aFull = a._matchRatio >= 1 ? 1 : 0;
@@ -469,13 +497,17 @@ function normalizeAndRank(allProducts, maxResults = 10, query = '', condicion = 
   }
   const deduped = [...byDedupeKey.values()].map(ensurePayablePrecio);
 
-  // Orden final: 100% match primero (por precio dentro), luego parciales por precio
-  deduped.sort((a, b) => {
-    const aFull = (a._matchRatio >= 1) ? 1 : 0;
-    const bFull = (b._matchRatio >= 1) ? 1 : 0;
-    if (aFull !== bFull) return bFull - aFull;
-    return (Number(a.precio) || 0) - (Number(b.precio) || 0);
-  });
+  // Orden final
+  if (strictLowestPrice) {
+    deduped.sort(sortByComparablePrice);
+  } else {
+    deduped.sort((a, b) => {
+      const aFull = (a._matchRatio >= 1) ? 1 : 0;
+      const bFull = (b._matchRatio >= 1) ? 1 : 0;
+      if (aFull !== bFull) return bFull - aFull;
+      return (Number(a.precio) || 0) - (Number(b.precio) || 0);
+    });
+  }
 
   return deduped.slice(0, maxResults);
 }
