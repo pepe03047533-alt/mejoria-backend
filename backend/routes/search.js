@@ -68,7 +68,7 @@ function simplifyQueryForSources(q) {
 }
 
 router.get('/', async (req, res) => {
-  const { q, condicion } = req.query;
+  const { q } = req.query;
   if (!q || q.trim().length === 0) {
     return res.status(400).json({ error: 'Se requiere el parámetro q' });
   }
@@ -84,13 +84,13 @@ router.get('/', async (req, res) => {
     const start = Date.now();
     const catKey = detectCategory(normalizedQuery);
     const categoryId = catKey ? ML_CATEGORIES[catKey] : null;
-    const cond = condicion === 'usado' ? 'usado' : 'nuevo';
+    const cond = 'todos';
 
     const searchQuery = simplifyQueryForSources(normalizedQuery);
     if (searchQuery !== normalizedQuery) {
       console.log(`  → Query fuentes: "${searchQuery}"`);
     }
-    console.log(`\n🔍 Búsqueda: "${normalizedQuery}" | Condición: ${cond}`);
+    console.log(`\n🔍 Búsqueda: "${normalizedQuery}"`);
 
     const mlResult = await withTimeout(
       searchMercadoLibre(searchQuery, categoryId, cond),

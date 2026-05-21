@@ -3,13 +3,10 @@ import { API_BASE_URL } from '../config/api'
 
 const BASE_URL = API_BASE_URL
 
-export async function searchProducts(query, condicion = 'nuevo') {
+export async function searchProducts(query) {
   const params = new URLSearchParams()
   params.set('q', query)
-  if (condicion && condicion !== 'todos') {
-    params.set('condicion', condicion)
-  }
-  
+
   const response = await axios.get(`${BASE_URL}/api/search?${params.toString()}`, {
     timeout: 45000,
   })

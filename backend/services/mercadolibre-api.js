@@ -63,7 +63,6 @@ function mapMeliItem(item) {
 
 async function searchMercadoLibreApi(query, categoryId = null, condicion = 'nuevo') {
   const performSearch = async (token) => {
-    const normalizedCondition = 'new';
     const headers = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
       Accept: 'application/json',
@@ -88,8 +87,9 @@ async function searchMercadoLibreApi(query, categoryId = null, condicion = 'nuev
         sort: sortMode,
         limit: PAGE_SIZE,
         offset,
-        condition: normalizedCondition,
       };
+      if (condicion === 'nuevo') params.condition = 'new';
+      else if (condicion === 'usado') params.condition = 'used';
       if (categoryId) params.category = categoryId;
       const { data, status } = await axios.get('https://api.mercadolibre.com/sites/MLA/search', {
         params,
